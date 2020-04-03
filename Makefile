@@ -40,6 +40,8 @@ NM_SRC		=			main.c									\
 								symbol.c								\
 								sort.c									\
 								utils.c									\
+								mach-o.c								\
+								fat.c										\
 
 OTOOL_SRC		=	main.c					\
 

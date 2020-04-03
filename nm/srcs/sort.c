@@ -13,7 +13,7 @@ int   alph_cmp_symtab(t_symtab *a, t_symtab *b)
 {
     int  cmp;
 
-    cmp = strcmp(a->name, b->name);
+    cmp = ft_strcmp(a->name, b->name);
   /*  if (!cmp)
     {
         if (pinfo->arch == 64)
@@ -38,7 +38,7 @@ void qsort_symtab(t_pinfo *pinfo, uint32_t low, uint32_t high, int (*cmp)(t_symt
   pivot = &(pinfo->symtab[high - 1]);
   while (j < high - 1)
   {
-    if (cmp(&(pinfo->symtab[j]), pivot) <= 0)
+    if (cmp(&(pinfo->symtab[j]), pivot) < 0)
       swap_sym(&(pinfo->symtab[i++]), &(pinfo->symtab[j]));
     j++;
   }
@@ -49,9 +49,9 @@ void qsort_symtab(t_pinfo *pinfo, uint32_t low, uint32_t high, int (*cmp)(t_symt
 
 void sort_symtab(t_pinfo *pinfo)
 {
-    //qsort(pinfo->symtab, pinfo->symid, sizeof(t_symtab),
-		  //(int (*)(const void *, const void *))alph_cmp_symtab);
-  qsort_symtab(pinfo, 0, pinfo->symid, &alph_cmp_symtab);
+    qsort(pinfo->symtab, pinfo->symid, sizeof(t_symtab),
+	  (int (*)(const void *, const void *))alph_cmp_symtab); // difference when name is identical ....
+  //qsort_symtab(pinfo, 0, pinfo->symid, &alph_cmp_symtab);
   /*int j = pinfo->symid - 1;
   for (int i = 0; i < j; ++i, --j)
   {

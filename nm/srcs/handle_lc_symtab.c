@@ -7,6 +7,8 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
   void                  *strtab_addr;
   uint32_t              nsyms;
   char                  *symname;
+  struct nlist_64       nlist;
+  char                  symbol;
   // struct section_64     *section;
 
   // printf("%zu, %zu\n", sizeof(ab), sizeof(unsigned long));
@@ -22,14 +24,22 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
     if (pinfo->arch == 32)
     {
       symname = (char *)(strtab_addr + pinfo->get_uint32_t(((struct nlist *)(symtab))->n_un.n_strx));
-      pinfo->symtab[pinfo->symid++] = (t_symtab){symtab, symname};
+      nlist.n_value = pinfo->get_uint32_t(((struct nlist *)(symtab))->n_value);
+      nlist.n_type = ((struct nlist *)(symtab))->n_type;
+      nlist.n_sect = ((struct nlist *)(symtab))->n_sect;
+      symbol = get_symbol(nlist.n_type, nlist.n_sect, nlist.n_value, pinfo);
+      if (symbol != '-')
+        pinfo->symtab[pinfo->symid++] = (t_symtab){nlist, symbol, symname};
   //    printf("nsect %u n_type %x n_type & N_TYPE %x %x\n", ((struct nlist *)(symtab))->n_sect, ((struct nlist *)(symtab))->n_type, ((struct nlist *)(symtab))->n_type & N_TYPE, ((struct nlist *)(symtab))->n_value);
       symtab += sizeof(struct nlist);
     }
     if (pinfo->arch == 64)
     {
       symname = (char *)(strtab_addr + pinfo->get_uint32_t(((struct nlist_64 *)(symtab))->n_un.n_strx));
-      pinfo->symtab[pinfo->symid++] = (t_symtab){symtab, symname};
+      nlist = *(struct nlist_64 *)(symtab);
+      symbol = get_symbol(nlist.n_type, nlist.n_sect, nlist.n_value, pinfo);
+      if (symbol != '-')
+        pinfo->symtab[pinfo->symid++] = (t_symtab){nlist, symbol, symname};
       //printf("nsect %u n_type %x n_type & N_TYPE %x %llx\n", ((struct nlist_64 *)(symtab))->n_sect, ((struct nlist_64 *)(symtab))->n_type, ((struct nlist_64 *)(symtab))->n_type & N_TYPE, ((struct nlist_64 *)(symtab))->n_value);
       symtab += sizeof(struct nlist_64);
     }
