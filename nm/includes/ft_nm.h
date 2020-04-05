@@ -8,15 +8,19 @@
 # include <mach-o/loader.h>
 # include <mach-o/nlist.h>
 # include <mach-o/fat.h>
+# include <mach-o/arch.h>
 
 /*    OPTIONS define  */
 
-# define OPT_A  1
+# define OPT_A    0b1
+# define OPT_ARCH 0b10
 
 /*                  */
 
 # define ARCH_32  32
 # define ARCH_64  64
+// # define BIG_ENDIAN 0
+// # define LITTLE_ENDIAN 1
 
 typedef struct s_symtab
 {
@@ -37,9 +41,28 @@ typedef enum
   FAT_FILE,
 } e_file_type;
 
+typedef enum
+{
+  _ARCH_32,
+  _ARCH_64,
+} e_arch_type;
+
+typedef enum
+{
+  BIG,
+  LITTLE,
+} e_endian_type;
+
+typedef struct s_cpu_info
+{
+  e_endian_type endian;
+  e_arch_type   arch;
+}               t_cpu_info;
+
 typedef struct s_pinfo
 {
   uint32_t  (*get_uint32_t)(uint32_t);
+  const NXArchInfo  *myinfo;
   t_sectab  *sectab;
   t_symtab  *symtab;
   uint32_t  secid;
@@ -58,7 +81,7 @@ uint32_t  same_uint32_t(uint32_t nb);
 t_pinfo      get_parse_info(uint32_t magic);
 
 void  handle_macho_file(void **mfile, void *filestart, t_pinfo *pinfo);
-void  handle_fat_file(void **mfile, t_pinfo *pinfo);
+void  handle_fat_file(void **mfile, t_pinfo *pinfo, uint32_t options);
 
 /*  command handle functions  */
 void handle_load_command(struct load_command *load_command, t_pinfo *pinfo, void *filestart);
