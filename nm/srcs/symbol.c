@@ -22,15 +22,17 @@ char  get_section_symbol(t_pinfo *pinfo, uint8_t n_sect)
 char  get_symbol(uint8_t n_type, uint8_t n_sect, uint64_t n_value, t_pinfo *pinfo)
 {
   char  sym;
-//  printf("ntype %x: ", n_type);
+ // printf("ntype %2x\n\n", n_type);
   if ((n_type & N_STAB))
     sym = '-';
   else if ((n_type & N_TYPE) == N_UNDF)
   {
-    if ((n_type & N_EXT) && n_value)
-      sym = 'C';
+    if (n_value)
+    {
+      sym = (n_type & N_EXT) ? 'C' : 'c';
+    }
     else
-      sym = 'U';
+      sym = (n_type & N_EXT) ? 'U' : 'u';
   }
   else if ((n_type & N_TYPE) == N_ABS)
     sym = 'A';
@@ -40,8 +42,12 @@ char  get_symbol(uint8_t n_type, uint8_t n_sect, uint64_t n_value, t_pinfo *pinf
     if (!(n_type & N_EXT))
       sym -= ('A' - 'a');
   }
-  else //perhaps others ?????
-    sym = 'U';
+  else if ((n_type & N_TYPE) == N_INDR)
+    sym = 'I';
+  else if ((n_type & N_TYPE) == N_PBUD)
+    sym = 'u';
+  else
+    sym = '?';
   return (sym);
 }
 /*
@@ -93,10 +99,12 @@ void  assign_symbol(t_pinfo *pinfo, uint32_t options)
     //  printf("hallo sym %c\n", symbol);
       if ((pinfo->symtab + i)->symbol != '-' || (options & OPT_A))
       {
-        if ((pinfo->symtab + i)->symbol != 'U')
+        if ((pinfo->symtab + i)->symbol == 'I')
+          printf(pinfo->arch == ARCH_32 ? "%8c %c %s (indirect for %s)\n" : "%16c %c %s (indirect for %s)\n", ' ', (pinfo->symtab + i)->symbol, (pinfo->symtab + i)->name, (pinfo->symtab + i)->name);
+        else if ((pinfo->symtab + i)->symbol != 'U' && (pinfo->symtab + i)->symbol != 'u')
           printf(pinfo->arch == ARCH_32 ? "%08llx %c %s\n" : "%016llx %c %s\n"/* strx %u, type %hhx sect %hhu, desc %hx\n"*/, (pinfo->symtab + i)->sym.n_value,
             (pinfo->symtab + i)->symbol, (pinfo->symtab + i)->name);//, ((struct nlist_64 *)((pinfo->symtab + i)->symaddr))->n_un.n_strx, ((struct nlist_64 *)((pinfo->symtab + i)->symaddr))->n_type, ((struct nlist_64 *)((pinfo->symtab + i)->symaddr))->n_sect, ((struct nlist_64 *)((pinfo->symtab + i)->symaddr))->n_desc);
-         else
+        else
            printf(pinfo->arch == ARCH_32 ? "%8c %c %s\n" : "%16c %c %s\n", ' ', (pinfo->symtab + i)->symbol, (pinfo->symtab + i)->name);
       }
     i++;

@@ -42,6 +42,7 @@ NM_SRC		=			main.c									\
 								utils.c									\
 								mach-o.c								\
 								fat.c										\
+								archive.c								\
 
 OTOOL_SRC		=	main.c					\
 

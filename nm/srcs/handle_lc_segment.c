@@ -12,7 +12,7 @@ void handle_lc_segment(void *addr, t_pinfo *pinfo)
   update_sectab_size(pinfo, nsects);
   while (nsects--)
   {
-    //  printf("secname %s in seg %s adddr %llx\n", section->sectname, section->segname, section->addr);
+      //maprintf("secname %s in seg %s adddr %x\n", section->sectname, section->segname, section->addr);
       pinfo->sectab[pinfo->secid++] = (t_sectab){(void *)section};
       section = (void *)section + sizeof(struct section);
   }

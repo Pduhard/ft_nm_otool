@@ -1,6 +1,6 @@
 #include "ft_nm.h"
 
-void *mapp_file(char *file_name, char *bin_name)
+void *mapp_file(char *file_name, char *bin_name, off_t *fsize)
 {
   int         fd;
   struct stat stat_buf;
@@ -11,6 +11,7 @@ void *mapp_file(char *file_name, char *bin_name)
     ft_fdprintf(2, "error: %s: can't open file: %s\n", bin_name, file_name);
     return (NULL);
   }
+  *fsize = stat_buf.st_size;
   if ((mapped_file = mmap(NULL, stat_buf.st_size, PROT_READ, MAP_PRIVATE, fd, 0)) == MAP_FAILED)
   {
     ft_fdprintf(2, "error: %s: can't map file: %s\n", bin_name, file_name);
@@ -28,6 +29,7 @@ int main(int argc, char **argv)
 // {
 //   printf("little endian %d\n", n >> 24);
 // }
+  off_t fsize;
   int     i = 1;
   void    *mfile;
 
@@ -35,8 +37,8 @@ int main(int argc, char **argv)
     return (0); // !!!!!! need to run with a.out !!!!!!
   while (argv[i])
   {
-    if ((mfile = mapp_file(argv[i], argv[0])))
-      display_file_sym(mfile, 0, argv[i]);
+    if ((mfile = mapp_file(argv[i], argv[0], &fsize)))
+      display_file_sym(mfile, 0, argv[i], fsize);
     i++;
   }
   return (0);

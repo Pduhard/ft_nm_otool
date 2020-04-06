@@ -9,11 +9,16 @@
 # include <mach-o/nlist.h>
 # include <mach-o/fat.h>
 # include <mach-o/arch.h>
+# include <mach-o/ranlib.h>
+# include <ar.h>
 
 /*    OPTIONS define  */
 
 # define OPT_A    0b1
 # define OPT_ARCH 0b10
+
+# define FAT_ARCH_ALL 0
+# define FAT_ARCH_SPEC 1
 
 /*                  */
 
@@ -39,6 +44,7 @@ typedef enum
 {
   MH_FILE,
   FAT_FILE,
+  ARCHIVE_FILE,
 } e_file_type;
 
 typedef enum
@@ -70,6 +76,8 @@ typedef struct s_pinfo
   int   endian; //same 0 other 1
   int   arch;   //32x - 64x
   e_file_type   file_type; //
+  char        *file_name;
+  off_t       fsize;
 }             t_pinfo;
 
 /*  conversions functions */
@@ -78,10 +86,11 @@ uint32_t  reverse_uint32_t(uint32_t nb);
 uint32_t  same_uint32_t(uint32_t nb);
 
 /*  file type handling functions */
-t_pinfo      get_parse_info(uint32_t magic);
+t_pinfo      get_parse_info(void *mfile);
 
-void  handle_macho_file(void **mfile, void *filestart, t_pinfo *pinfo);
+void  handle_macho_file(void **mfile, void *filestart, t_pinfo *pinfo, uint32_t options);
 void  handle_fat_file(void **mfile, t_pinfo *pinfo, uint32_t options);
+void  handle_archive_file(void **mfile, t_pinfo *pinfo, uint32_t options);
 
 /*  command handle functions  */
 void handle_load_command(struct load_command *load_command, t_pinfo *pinfo, void *filestart);
@@ -105,6 +114,6 @@ void  assign_symbol(t_pinfo *pinfo, uint32_t options);
 
 /*        */
 
-void     display_file_sym(void *mfile, uint32_t options, char *file_name);
+void     display_file_sym(void *mfile, uint32_t options, char *file_name, off_t fsize);
 
 #endif
