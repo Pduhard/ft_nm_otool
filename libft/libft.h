@@ -61,6 +61,7 @@ char				*ft_strrchr(const char *s, int c);
 int					ft_strncmp_case(const char *s1, const char *s2, size_t n);
 size_t				ft_strlen(const char *s);
 char				*ft_strdup(const char *src);
+char				*ft_strndup(const char *src, size_t len);
 size_t				ft_strlcat(char *dst, const char *src, size_t size);
 void				*ft_memset(void *b, int c, size_t len);
 void				ft_bzero(void *s, size_t n);

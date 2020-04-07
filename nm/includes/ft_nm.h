@@ -33,6 +33,7 @@ typedef struct s_symtab
   struct nlist_64 sym;
   char          symbol;
   char         *name;
+  char         *indr;
 }              t_symtab;
 
 typedef struct s_sectab
@@ -45,6 +46,7 @@ typedef enum
   MH_FILE,
   FAT_FILE,
   ARCHIVE_FILE,
+  UNKNOWN_FILE,
 } e_file_type;
 
 typedef enum
@@ -68,6 +70,7 @@ typedef struct s_cpu_info
 typedef struct s_pinfo
 {
   uint32_t  (*get_uint32_t)(uint32_t);
+  uint64_t  (*get_uint64_t)(uint64_t);
   const NXArchInfo  *myinfo;
   t_sectab  *sectab;
   t_symtab  *symtab;
@@ -84,13 +87,24 @@ typedef struct s_pinfo
 
 uint32_t  reverse_uint32_t(uint32_t nb);
 uint32_t  same_uint32_t(uint32_t nb);
+uint64_t  reverse_uint64_t(uint64_t nb);
+uint64_t  same_uint64_t(uint64_t nb);
 
 /*  file type handling functions */
 t_pinfo      get_parse_info(void *mfile);
 
-void  handle_macho_file(void **mfile, void *filestart, t_pinfo *pinfo, uint32_t options);
+void  handle_macho_file(void **mfile, t_pinfo *pinfo, uint32_t options);
 void  handle_fat_file(void **mfile, t_pinfo *pinfo, uint32_t options);
 void  handle_archive_file(void **mfile, t_pinfo *pinfo, uint32_t options);
+
+/* check functions */
+
+int  check_load_command(struct load_command *load_command, t_pinfo *pinfo, uint32_t load_cmd_id);
+int  check_lc_symtab(struct load_command *load_command, t_pinfo *pinfo, uint32_t load_cmd_id);
+int  check_lc_segment(struct load_command *load_command, t_pinfo *pinfo, uint32_t load_cmd_id);
+int  check_lc_segment_64(struct load_command *load_command, t_pinfo *pinfo, uint32_t load_cmd_id);
+int  check_macho_file(void *mfile, t_pinfo *pinfo);
+int  check_archive_file(void *mfile, t_pinfo *pinfo);
 
 /*  command handle functions  */
 void handle_load_command(struct load_command *load_command, t_pinfo *pinfo, void *filestart);

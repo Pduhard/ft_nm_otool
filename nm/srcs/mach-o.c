@@ -1,34 +1,61 @@
 #include "ft_nm.h"
 
-uint32_t  get_number_load_command(void **mfile, t_pinfo *pinfo)
+uint32_t  get_number_load_command(void *mfile, t_pinfo *pinfo)
 {
-  uint32_t    ncmds;
-
   if (pinfo->arch == 64)
-  {
-    ncmds = pinfo->get_uint32_t((*(struct mach_header_64 **)(mfile))->ncmds);
-    *mfile += sizeof(struct mach_header_64);
-  }
+    return (pinfo->get_uint32_t(((struct mach_header_64 *)mfile)->ncmds));
   else
-  {
-    ncmds = pinfo->get_uint32_t((*(struct mach_header **)(mfile))->ncmds);
-    *mfile += sizeof(struct mach_header);
-  }
-  return (ncmds);
+    return (pinfo->get_uint32_t(((struct mach_header *)mfile)->ncmds));
+    // return (pinfo->get_uint32_t((*(struct mach_header **)(mfile))->ncmds));
+  return (0);
 }
 
-void  handle_macho_file(void **mfile, void *filestart, t_pinfo *pinfo, uint32_t options)
+int   check_macho_file(void *mfile, t_pinfo *pinfo)
+{
+  uint32_t            ncmds;
+  struct load_command *load_c;
+  uint32_t            i;
+
+  i = 0;
+  ncmds = get_number_load_command(mfile, pinfo);
+  load_c = (struct load_command *)(mfile + (pinfo->arch == 64 ? sizeof(struct mach_header_64) : sizeof(struct mach_header)));
+  while (i < ncmds)
+  {
+    // printf("load_command id %x cmd size %u %u/%u\n", load_c->cmd, load_c->cmdsize, i, ncmds);
+    // if ((off_t)((void *)load_c - mfile) > pinfo->fsize)
+    // {
+    //   ft_fdprintf(2, "truncated or malformed object (load commands extend past the end of the file)\n");
+    //   return (0);
+    // }
+    if (!check_load_command(load_c, pinfo, i))
+     return (0);
+    if (!pinfo->get_uint32_t(load_c->cmdsize))
+    {
+      ft_fdprintf(2, "malformed object (load command %u cmdsize is zero)\n", i);
+      return (0);
+    }
+    load_c = (void *)load_c + pinfo->get_uint32_t(load_c->cmdsize);
+    i++;
+  }
+  // printf("e\n")m;
+  return (1);
+}
+
+void  handle_macho_file(void **mfile, t_pinfo *pinfo, uint32_t options)
 {
   struct load_command *load_c;
   uint32_t            ncmds;
+  // void                *filestart;
 
-  ncmds = get_number_load_command(mfile, pinfo);
-  //printf("avant loadc\n");
-  load_c = *(struct load_command **)mfile;
+  if (!check_macho_file(*mfile, pinfo))
+    return ;
+  ncmds = get_number_load_command(*mfile, pinfo);
+  //mprintf("avant loadc\n");
+  load_c = (struct load_command *)(*mfile + (pinfo->arch == 64 ? sizeof(struct mach_header_64) : sizeof(struct mach_header)));
   while (ncmds--)
   {
-  //ma    printf("load_command id %x cmd size %u\n", load_c->cmd, load_c->cmdsize);
-    handle_load_command(load_c, pinfo, filestart);
+//    printf("load_command id %x cmd size %u\n", load_c->cmd, load_c->cmdsize);
+    handle_load_command(load_c, pinfo, *mfile);
     load_c = (void *)load_c + pinfo->get_uint32_t(load_c->cmdsize);
   }
 //  printf("sort avant\n");

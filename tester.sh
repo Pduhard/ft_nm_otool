@@ -1,12 +1,13 @@
 #!/bin/bash
 
-filelist=$(ls -1 test_file)
+test_dir="/usr/sbin"
+filelist=$(ls -1 ${test_dir})
 R="\e[0;31m"
 G="\e[0;32m"
 N="\e[0m"
 B="\e[1m"
 score=0;
-total=$(ls -1 test_file | wc -l);
+total=$(ls -1 ${test_dir} | wc -l);
 diff_opt=0;
 stop_opt=0;
 for arg in $*
@@ -23,7 +24,7 @@ done
 
 for x in $filelist;
 do
-  filepath="test_file/${x}"
+  filepath="${test_dir}/${x}"
   a=$(diff <(nm $filepath 2>/dev/null) <(./ft_nm $filepath 2>/dev/null))
   if [ ${#a} -eq 0 ]
   then

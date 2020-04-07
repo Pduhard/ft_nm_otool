@@ -15,7 +15,7 @@
 CC			= gcc
 NAME		= libft.a
 
-FLAGS		= -Wall -Werror -Wextra -O3 
+FLAGS		= -Wall -Werror -Wextra -O3
 INCLUDES	= -I ./libft.h
 
 SRCDIR		= ./
@@ -48,6 +48,7 @@ SRC			=	ft_putchar.c		\
 				ft_strrchr.c		\
 				ft_strlen.c			\
 				ft_strdup.c			\
+				ft_strndup.c		\
 				ft_memset.c			\
 				ft_bzero.c			\
 				ft_memcpy.c			\
