@@ -31,8 +31,13 @@ int   check_archive_file(void *mfile, t_pinfo *pinfo)
 
     //  printf("%u %u sizeof %zu\n", (unsigned int)((void *)ar_hd - mfile + ft_atoll(ar_hd->ar_size)), (unsigned int)pinfo->fsize, sizeof(struct ar_hdr));
       hd = (void *)ar_hd + sizeof(struct ar_hdr) + (extended ? ft_atoll(ar_hd->ar_name + ft_strlen(AR_EFMT1)) : 0);
+      if ((off_t)((void *)hd - mfile) > pinfo->fsize)
+      {
+        ft_fdprintf(2, "size too large (archive member extends past the end of the file)\n");
+        return (0);
+      }
       fpinfo = get_parse_info((void *)hd);
-    //  printf("magic %x == %x ?\n", *(uint32_t *)(ar_hd, FAT_MAGIC);
+  //   printf("magic %x == %x ?\n", *(uint32_t *)ar_hd, FAT_MAGIC);
       if (*(uint32_t *)hd == FAT_MAGIC || *(uint32_t *)hd == FAT_CIGAM)
       {
         ft_fdprintf(2, "is a fat file (not allowed in an archive)\n");

@@ -107,6 +107,7 @@ SRC			=	ft_putchar.c		\
 				ft_printf.c			\
 				ft_getf.c			\
 				ft_fdprintf.c		\
+				ft_fdvprintf.c		\
 				parse_conv.c		\
 				parsing.c			\
 				signed_conv.c		\

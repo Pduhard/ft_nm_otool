@@ -12,7 +12,7 @@ int  check_lc_segment_64(struct load_command *load_command, t_pinfo *pinfo, uint
     ft_fdprintf(2, "malformed object (inconsistent cmdsize in LC_SEGMENT_64 command %u for the number of sections)\n", load_cmd_id);
     return (0);
   }
-  if (pinfo->get_uint32_t(segment->fileoff) + pinfo->get_uint32_t(segment->filesize) > pinfo->fsize)
+  if (pinfo->get_uint64_t(segment->fileoff) + pinfo->get_uint64_t(segment->filesize) > (uint64_t)pinfo->fsize)
   {
     ft_fdprintf(2, "truncated or malformed object (offset plus size in LC_SEGMENT_64 command %u extends past the end of the file)\n", load_cmd_id);
     return (0);

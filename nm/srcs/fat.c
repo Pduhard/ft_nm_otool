@@ -146,6 +146,17 @@ int check_fat_file(void *mfile, t_pinfo *pinfo)
       ft_fdprintf(2, "fat file: %s truncated or malformed (offset plus size of cputype (%d) cpusubtype (%d) extends past the end of the file)\n", pinfo->file_name, pinfo->get_uint32_t((fat_arch + i)->cputype), pinfo->get_uint32_t((fat_arch + i)->cpusubtype));
       return (0);
     }
+    if (pinfo->get_uint32_t((fat_arch + i)->align) > sizeof(uint32_t) * 8)
+    {
+      ft_fdprintf(2, "fat file: %s alignment (2^%u) too large for cputype (%d) cpusubtype (%d) (maximum 2^%zu)\n)", pinfo->file_name, pinfo->get_uint32_t((fat_arch + i)->align), pinfo->get_uint32_t((fat_arch + i)->cputype), pinfo->get_uint32_t((fat_arch + i)->cpusubtype), sizeof(uint32_t) * 8);
+
+      return (0);
+    }
+    if ((pinfo->get_uint32_t((fat_arch + i)->offset) % (1 << pinfo->get_uint32_t((fat_arch + i)->align))))
+    {
+      ft_fdprintf(2, "fat file: %s offset: %u for cputype (%d) cpusubtype (%d) not aligned on it's alignment (2^%u)\n", pinfo->file_name, pinfo->get_uint32_t((fat_arch + i)->offset), pinfo->get_uint32_t((fat_arch + i)->cputype), pinfo->get_uint32_t((fat_arch + i)->cpusubtype), pinfo->get_uint32_t((fat_arch + i)->align));
+      return (0);
+    }
     j = 0;
     while (j < nfat_file)
     {

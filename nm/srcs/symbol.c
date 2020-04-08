@@ -92,9 +92,11 @@ void  assign_symbol(t_pinfo *pinfo, uint32_t options)
       // n_type = get_sym_n_type(pinfo, i);
       // n_sect = get_sym_n_sect(pinfo, i);
       // symbol = get_symbol(n_type, n_sect, n_value, pinfo);
-    //  printf("hallo sym %c\n", symbol);
+      //printf("hallo sym %c\n", 'i');
       if ((pinfo->symtab + i)->symbol != '-' || (options & OPT_A))
       {
+       //  printf("%c\n", (pinfo->symtab + i)->symbol);
+       // printf("%s\n", (pinfo->symtab + i)->name);
         if ((pinfo->symtab + i)->symbol == 'I' || (pinfo->symtab + i)->symbol == 'i')
           printf(pinfo->arch == ARCH_32 ? "%8c %c %s (indirect for %s)\n" : "%16c %c %s (indirect for %s)\n", ' ', (pinfo->symtab + i)->symbol, (pinfo->symtab + i)->name, (pinfo->symtab + i)->indr);
         else if ((pinfo->symtab + i)->symbol != 'U' && (pinfo->symtab + i)->symbol != 'u')

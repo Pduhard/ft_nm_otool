@@ -12,10 +12,34 @@
 # include <mach-o/ranlib.h>
 # include <ar.h>
 
+/*        USAGE       */
+
+# define NM_USAGE "[-agnopruUmxjlfAP[s segname sectname] [-] [-t format] [[-arch <arch_flag>] ...] [file ...]"
 /*    OPTIONS define  */
 
-# define OPT_A    0b1
-# define OPT_ARCH 0b10
+# define VALID_FLAGS  "agnopruUmxjslfAP"
+# define OPT_ERROR    0
+# define OPT_A        0b1
+# define OPT_G        0b10
+# define OPT_N        0b100
+# define OPT_O        0b1000
+# define OPT_P        0b10000
+# define OPT_R        0b100000
+# define OPT_U        0b1000000
+# define OPT_MAJ_U    0b10000000
+# define OPT_M        0b100000000
+# define OPT_X        0b1000000000
+# define OPT_J        0b10000000000
+# define OPT_S        0b100000000000
+# define OPT_L        0b1000000000000
+# define OPT_F        0b10000000000000
+# define OPT_MAJ_A    0b100000000000000
+# define OPT_MAJ_P    0b1000000000000000
+
+# define OPT_T        0b10000000000000000
+# define OPT_ARCH     0b100000000000000000
+
+# define OPT_END      0b1000000000000000000
 
 # define FAT_ARCH_ALL 0
 # define FAT_ARCH_SPEC 1
@@ -61,11 +85,27 @@ typedef enum
   LITTLE,
 } e_endian_type;
 
+typedef enum
+{
+  F_DEC,
+  F_OCT,
+  F_HEX,
+} e_format;
+
 typedef struct s_cpu_info
 {
   e_endian_type endian;
   e_arch_type   arch;
 }               t_cpu_info;
+
+typedef struct s_nm_options
+{
+  uint32_t     flags;
+  e_format     format;
+  char         *segname;
+  char         *sectname;
+  char         **arch_flags;
+}              t_nm_options;
 
 typedef struct s_pinfo
 {
@@ -129,5 +169,12 @@ void  assign_symbol(t_pinfo *pinfo, uint32_t options);
 /*        */
 
 void     display_file_sym(void *mfile, uint32_t options, char *file_name, off_t fsize);
+
+/*  error functions */
+
+int     ft_memalloc_error(int ret, size_t size, char *prog_name);
+int     ft_return_error(int ret, char *message, ...);
+int     ft_usage_error(int ret, char *usage, char *prog_name);
+// int     return_memalloc_error(int retu, size_t size, char *prog_name);
 
 #endif

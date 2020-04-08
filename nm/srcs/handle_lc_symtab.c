@@ -7,7 +7,7 @@ int  check_lc_symtab(struct load_command *load_command, t_pinfo *pinfo, uint32_t
   symtab_cmd = (struct symtab_command *)load_command;
   if (pinfo->get_uint32_t(load_command->cmdsize) != sizeof(struct symtab_command))
   {
-    ft_fdprintf(2, "malformed object (LC_SYMTAB bad cmdsize) in command %u\n", load_cmd_id);
+    ft_fdprintf(2, "malformed object (LC_SYMTAB command %u has incorrect cmdsize)\n", load_cmd_id);
     return (0);
   }
   if (pinfo->symtab)
@@ -60,11 +60,18 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
     //printf("%u\n", ((struct nlist *)(symtab))->n_un.n_strx);
     if (pinfo->arch == 32)
     {
+      if (pinfo->get_uint32_t(((struct nlist *)(symtab))->n_un.n_strx) == 0)
+        symname = ft_strdup("");
+      else if (pinfo->get_uint32_t(((struct nlist *)(symtab))->n_un.n_strx) > pinfo->get_uint32_t(symtab_cmd->strsize))
+        symname = ft_strdup("bad string index");
+      // else
+      //   symname = (char *)(strtab_addr + pinfo->get_uint32_t(((struct nlist *)(symtab))->n_un.n_strx));
+      else if ((off_t)((void *)(strtab_addr + pinfo->get_uint32_t(((struct nlist *)(symtab))->n_un.n_strx)) - filestart) < pinfo->fsize)
+        symname = ft_strndup((char *)(strtab_addr + pinfo->get_uint32_t(((struct nlist *)(symtab))->n_un.n_strx)), pinfo->fsize - (off_t)((void *)(strtab_addr + pinfo->get_uint32_t(((struct nlist *)(symtab))->n_un.n_strx)) - filestart));
 
-      if (pinfo->get_uint32_t(((struct nlist *)(symtab))->n_un.n_strx) > pinfo->get_uint32_t(symtab_cmd->strsize))
-        symname = "bad string index";
+      //  symname = (char *)(strtab_addr + pinfo->get_uint32_t(((struct nlist_64 *)(symtab))->n_un.n_strx));
       else
-        symname = (char *)(strtab_addr + pinfo->get_uint32_t(((struct nlist *)(symtab))->n_un.n_strx));
+        symname = ft_strdup("bad string index");
       nlist.n_value = pinfo->get_uint32_t(((struct nlist *)(symtab))->n_value);
       nlist.n_type = ((struct nlist *)(symtab))->n_type;
       nlist.n_sect = ((struct nlist *)(symtab))->n_sect;
@@ -74,15 +81,17 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
         if (symbol == 'I' || symbol == 'i')
         {
           if (nlist.n_value == 0)
-            indr = "";
+            indr = ft_strdup("");
           else if (nlist.n_value > (uint64_t)pinfo->get_uint32_t(symtab_cmd->strsize))
-            indr = "bad string index";
+            indr = ft_strdup("bad string index");
           else
-            indr = (char *)(strtab_addr + nlist.n_value);
+            indr = ft_strndup((char *)(strtab_addr + nlist.n_value), pinfo->fsize - (off_t)((void *)(strtab_addr + nlist.n_value) - filestart));
         }
       //maprintf("salut sym\n");
         pinfo->symtab[pinfo->symid++] = (t_symtab){nlist, symbol, symname, indr};
       }
+      else
+        free(symname);
     //  printf("nsect %u n_type %x n_type & N_TYPE %x %x\n", ((struct nlist *)(symtab))->n_sect, ((struct nlist *)(symtab))->n_type, ((struct nlist *)(symtab))->n_type & N_TYPE, ((struct nlist *)(symtab))->n_value);
       symtab += sizeof(struct nlist);
     }
@@ -90,11 +99,13 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
     {
     //  printf("%u\n", pinfo->get_uint32_t(((struct nlist_64 *)(symtab))->n_un.n_strx));
       if (pinfo->get_uint32_t(((struct nlist_64 *)(symtab))->n_un.n_strx) == 0)
-        symname = "";
+        symname = ft_strdup("");
       else if (pinfo->get_uint32_t(((struct nlist_64 *)(symtab))->n_un.n_strx) > pinfo->get_uint32_t(symtab_cmd->strsize))
-        symname = "bad string index";
+        symname = ft_strdup("bad string index");
+      else if ((off_t)((void *)(strtab_addr + pinfo->get_uint32_t(((struct nlist_64 *)(symtab))->n_un.n_strx)) - filestart) < pinfo->fsize)
+        symname = ft_strndup((char *)(strtab_addr + pinfo->get_uint32_t(((struct nlist_64 *)(symtab))->n_un.n_strx)), pinfo->fsize - (off_t)((void *)(strtab_addr + pinfo->get_uint32_t(((struct nlist_64 *)(symtab))->n_un.n_strx)) - filestart));
       else
-        symname = (char *)(strtab_addr + pinfo->get_uint32_t(((struct nlist_64 *)(symtab))->n_un.n_strx));
+        symname = ft_strdup("bad string index");
 //      printf("%p %p diff %llu", symname, filestart, (unsigned long long)((unsigned long long)symname - (unsigned long long)filestart));
     //  printf("salut\n");
       nlist = *(struct nlist_64 *)(symtab);
@@ -105,15 +116,17 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
         if (symbol == 'I' || symbol == 'i')
         {
           if (nlist.n_value == 0)
-            indr = "";
+            indr = ft_strdup("");
           else if (nlist.n_value > (uint64_t)pinfo->get_uint32_t(symtab_cmd->strsize))
-            indr = "bad string index";
+            indr = ft_strdup("bad string index");
           else
-            indr = (char *)(strtab_addr + nlist.n_value);
+            indr = ft_strndup((char *)(strtab_addr + nlist.n_value), pinfo->fsize - (off_t)((void *)(strtab_addr + nlist.n_value) - filestart));
         }
       //maprintf("salut sym\n");
         pinfo->symtab[pinfo->symid++] = (t_symtab){nlist, symbol, symname, indr};
       }
+      else
+        free(symname);
       //printf("nsect %u n_type %x n_type & N_TYPE %x %llx\n", ((struct nlist_64 *)(symtab))->n_sect, ((struct nlist_64 *)(symtab))->n_type, ((struct nlist_64 *)(symtab))->n_type & N_TYPE, ((struct nlist_64 *)(symtab))->n_value);
       symtab += sizeof(struct nlist_64);
     }

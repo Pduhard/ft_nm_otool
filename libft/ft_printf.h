@@ -56,6 +56,7 @@ typedef	struct		s_part
 
 int					ft_getf(char **converted, const char *format, ...);
 int					ft_fdprintf(int fd, const char *format, ...);
+int					ft_fdvprintf(int fd, const char *format, va_list ap);
 t_part				*get_next_part(char *str, int *i, int j, va_list ap);
 t_part				*parse_format(char *format, va_list ap);
 char				*get_flags(char *str, int l);

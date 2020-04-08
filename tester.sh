@@ -1,6 +1,6 @@
 #!/bin/bash
 
-test_dir="/usr/sbin"
+test_dir="test_file"
 filelist=$(ls -1 ${test_dir})
 R="\e[0;31m"
 G="\e[0;32m"
@@ -42,6 +42,20 @@ do
       exit 0
     fi
   }
+  fi
+  nm $filepath 2>/dev/null 1>/dev/null
+  if [ $? -eq 139 ]
+  then
+    printf "${R}${B}[nm $filepath : SEGV] ${N}"
+  else
+    printf "${G}${B}[nm $filepath : OK] ${N}"
+  fi
+  ./ft_nm $filepath 2>/dev/null 1>/dev/null
+  if [ $? -ne 0 ]
+  then
+    printf "${R}${B}[ft_nm $filepathm : SEGV] ${N}\n"
+  else
+    printf "${G}${B}[ft_nm $filepathm : OK] ${N}\n"
   fi
 done;
 
