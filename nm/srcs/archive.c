@@ -79,7 +79,7 @@ char  *get_ar_name(struct ar_hdr *ar_hd, uint32_t *extended)
   return (ft_strndup(ar_hd->ar_name, i));
 }
 
-void  handle_archive_file(void **mfile, t_pinfo *pinfo, uint32_t options)
+void  handle_archive_file(void **mfile, t_pinfo *pinfo)
 {
   struct ar_hdr *ar_hd;
   void          *mcurfile;
@@ -124,6 +124,7 @@ void  handle_archive_file(void **mfile, t_pinfo *pinfo, uint32_t options)
       fpinfo = get_parse_info((void *)hd);
       fpinfo.fsize = ft_atoll(ar_hd->ar_size);
       fpinfo.file_name = pinfo->file_name;
+      fpinfo.options = pinfo->options;
       if (fpinfo.arch != 32 && fpinfo.arch != 64)
           ;//printf("arch in file chelou magic %d\n", hd->magic);
       else
@@ -135,7 +136,7 @@ void  handle_archive_file(void **mfile, t_pinfo *pinfo, uint32_t options)
 
           // printf("HFLUzefzefzefzef\n");
           // printf("%d %d\n", fpinfo.endian, fpinfo.arch);
-          handle_macho_file(&mcurfile, &fpinfo, options);
+          handle_macho_file(&mcurfile, &fpinfo);
           // update_fat_symtab(pinfo, &fpinfo);
         }
         else

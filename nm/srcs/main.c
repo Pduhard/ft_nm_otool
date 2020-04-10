@@ -79,7 +79,7 @@ uint32_t  check_nm_flag(char **argv, uint32_t *i, void *opt_struct)
     flag_str = &(argv[*i][1]);
     options = (t_nm_options *)opt_struct;
     opt_flag = 0;
-    printf("nm _flag %s\n", flag_str);
+  //  printf("nm _flag %s\n", flag_str);
     if (!ft_strcmp(flag_str, "arch"))
       return (update_arch_flags(&options->arch_flags, argv[++(*i)], argv[0]));
     if (!ft_strcmp(flag_str, "t"))
@@ -154,10 +154,11 @@ int main(int argc, char **argv)
   i = 0;
   if (!(files = parse_arguments(argv, &opt, &check_nm_flag, &opt.flags)))
     return (ft_usage_error(1, NM_USAGE, argv[0])); // !!!!!! need to run with a.out !!!!!!
+  // printf("%x\n", opt.flags);
   while (files[i])
   {
     if ((mfile = mapp_file(files[i], argv[0], &fsize)))
-      display_file_sym(mfile, 0, files[i], fsize);
+      display_file_sym(mfile, files[i], fsize, &opt);
     i++;
   }
   return (0);

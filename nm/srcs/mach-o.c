@@ -81,7 +81,7 @@ int   check_macho_file(void *mfile, t_pinfo *pinfo)
   return (1);
 }
 
-void  handle_macho_file(void **mfile, t_pinfo *pinfo, uint32_t options)
+void  handle_macho_file(void **mfile, t_pinfo *pinfo)
 {
   struct load_command *load_c;
   uint32_t            ncmds;
@@ -101,5 +101,5 @@ void  handle_macho_file(void **mfile, t_pinfo *pinfo, uint32_t options)
 //  printf("sort avant\n");
   sort_symtab(pinfo);
   //printf("sort apresm\n");
-  assign_symbol(pinfo, options);
+  assign_symbol(pinfo);
 }

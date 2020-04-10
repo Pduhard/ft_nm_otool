@@ -79,7 +79,7 @@ struct fat_arch *get_best_fat_arch(t_pinfo *pinfo, struct fat_header *fat_hd, st
   }
 }
 
-void handle_fat_arch(struct mach_header_64 *hd, uint32_t size, uint32_t options, t_pinfo *pinfo, uint32_t display)
+void handle_fat_arch(struct mach_header_64 *hd, uint32_t size, t_pinfo *pinfo, uint32_t display)
 {
   t_pinfo                 fpinfo;
   void                    *mcurfile;
@@ -99,6 +99,7 @@ void handle_fat_arch(struct mach_header_64 *hd, uint32_t size, uint32_t options,
   }
   fpinfo.fsize = size;
   fpinfo.file_name = pinfo->file_name;
+  fpinfo.options = pinfo->options;
   if (fpinfo.arch != 32 && fpinfo.arch != 64)
       printf("arch in file chelou magic %d\n", hd->magic);
   else
@@ -108,13 +109,13 @@ void handle_fat_arch(struct mach_header_64 *hd, uint32_t size, uint32_t options,
       mcurfile = (void *)hd;
       // printf("HFLUzefzefzefzef\n");
       // printf("%d %d\n", fpinfo.endian, fpinfo.arch);
-      handle_macho_file(&mcurfile, &fpinfo, options);
+      handle_macho_file(&mcurfile, &fpinfo);
       // update_fat_symtab(pinfo, &fpinfo);
     }
     else if (fpinfo.file_type == ARCHIVE_FILE)
     {
       mcurfile = (void *)hd;
-      handle_archive_file(&mcurfile, &fpinfo, options);
+      handle_archive_file(&mcurfile, &fpinfo);
     }
       //printf("magic %d in FAT file\n", hd->magic);
   }
@@ -172,6 +173,7 @@ int check_fat_file(void *mfile, t_pinfo *pinfo)
     fpinfo = get_parse_info((void *)hd);
     fpinfo.fsize = pinfo->get_uint32_t((fat_arch + i)->size);
     fpinfo.file_name = pinfo->file_name;
+    fpinfo.options = pinfo->options;
     // printf("bjr\n");
     if (fpinfo.file_type == MH_FILE && !check_macho_file(hd, &fpinfo))
       return (0);
@@ -182,7 +184,7 @@ int check_fat_file(void *mfile, t_pinfo *pinfo)
   return (1);
 }
 
-void  handle_fat_file(void **mfile, t_pinfo *pinfo, uint32_t options)
+void  handle_fat_file(void **mfile, t_pinfo *pinfo)
 {
   struct fat_header *fat_hd;
   struct fat_arch   *fat_arch;
@@ -208,19 +210,19 @@ void  handle_fat_file(void **mfile, t_pinfo *pinfo, uint32_t options)
   fat_archs_rev = NULL;
   fat_hd = *(struct fat_header **)(mfile);
 //m  printf("%x\n", fat_hd->magic);
-  if (!(options & OPT_ARCH))
+  // if (!(options & OPT_ARCH))
   {
     fat_arch = get_best_fat_arch(pinfo, fat_hd, (struct fat_arch *)(*mfile + sizeof(struct fat_header)), &fat_archs_rev);
     if (fat_arch)
     {
-      handle_fat_arch((struct mach_header_64 *)(*mfile + fat_arch->offset), fat_arch->size, options, pinfo, FAT_ARCH_SPEC);
+      handle_fat_arch((struct mach_header_64 *)(*mfile + fat_arch->offset), fat_arch->size, pinfo, FAT_ARCH_SPEC);
     }
     else
     {
       fat_arch = (struct fat_arch *)(*mfile + sizeof(struct fat_header));
       while (i < pinfo->get_uint32_t(fat_hd->nfat_arch))
       {
-          handle_fat_arch((struct mach_header_64 *)(*mfile + pinfo->get_uint32_t((fat_arch + i)->offset)), pinfo->get_uint32_t((fat_arch + i)->size), options, pinfo, FAT_ARCH_ALL);
+          handle_fat_arch((struct mach_header_64 *)(*mfile + pinfo->get_uint32_t((fat_arch + i)->offset)), pinfo->get_uint32_t((fat_arch + i)->size), pinfo, FAT_ARCH_ALL);
           i++;
       }
     }

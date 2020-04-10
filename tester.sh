@@ -2,12 +2,18 @@
 
 test_dir="test_file"
 filelist=$(ls -1 ${test_dir})
+flags=(
+  ''
+  '-a'
+);
 R="\e[0;31m"
 G="\e[0;32m"
+Y="\e[0;33m"
 N="\e[0m"
 B="\e[1m"
 score=0;
 total=$(ls -1 ${test_dir} | wc -l);
+total=$(echo $total "*" ${#flags[@]} | bc);
 diff_opt=0;
 stop_opt=0;
 for arg in $*
@@ -22,42 +28,67 @@ do
   fi
 done
 
-for x in $filelist;
+for flag in "${flags[@]}"
 do
-  filepath="${test_dir}/${x}"
-  a=$(diff <(nm $filepath 2>/dev/null) <(./ft_nm $filepath 2>/dev/null))
-  if [ ${#a} -eq 0 ]
-  then
-    printf "${G}${B}[ OK ][ $filepath ]${N}\n"
-    score=$(($score + 1))
-  else
-  {
-    printf "${R}${B}[ KO ][ $filepath ]${N}\n"
-    if [ $diff_opt -eq 1 ]
+  printf "|$flag|\n"
+  for x in $filelist
+  do
+    filepath="${test_dir}/${x}"
+    if [ -n "$flag" ]
     then
-      diff <(nm $filepath ) <(./ft_nm $filepath)
+      a=$(diff <(nm $flag $filepath 2>/dev/null) <(./ft_nm $flag $filepath 2>/dev/null))
+    else
+      a=$(diff <(nm $filepath 2>/dev/null) <(./ft_nm $filepath 2>/dev/null))
     fi
-    if [ $stop_opt -eq 1 ]
+    if [ ${#a} -eq 0 ]
     then
-      exit 0
+      printf "${G}${B}[ OK ][ nm $flag $filepath ]${N}\n"
+      score=$(($score + 1))
+    else
+    {
+      printf "\n"
+      nm $filepath 2>/dev/null 1>/dev/null
+      nm_ret=$?
+      ./ft_nm $filepath 2>/dev/null 1>/dev/null
+      if [ $nm_ret -eq 139 ] && [ $? -ne 139 ]; then
+        score=$(($score + 1))
+        printf "${Y}${B}[ nm SEGV ][ nm $flag $filepath ]${N}\n"
+      elif [ $? -eq 139 ]; then
+        printf "${R}${B}[ SEGV ][ nm $flag $filepath ]${N}\n"
+      else
+        printf "${R}${B}[ KO ][ nm $flag $filepath ]${N}\n"
+      fi
+      if [ $diff_opt -eq 1 ]
+      then
+        if [ -n "$flag" ]
+        then
+          diff <(nm $flag $filepath 2>/dev/null) <(./ft_nm $flag $filepath 2>/dev/null)
+        else
+          diff <(nm $filepath 2>/dev/null) <(./ft_nm $filepath 2>/dev/null)
+        fi
+      fi
+      if [ $stop_opt -eq 1 ]
+      then
+        exit 0
+      fi
+    }
     fi
-  }
-  fi
-  nm $filepath 2>/dev/null 1>/dev/null
-  if [ $? -eq 139 ]
-  then
-    printf "${R}${B}[nm $filepath : SEGV] ${N}"
-  else
-    printf "${G}${B}[nm $filepath : OK] ${N}"
-  fi
-  ./ft_nm $filepath 2>/dev/null 1>/dev/null
-  if [ $? -ne 0 ]
-  then
-    printf "${R}${B}[ft_nm $filepathm : SEGV] ${N}\n"
-  else
-    printf "${G}${B}[ft_nm $filepathm : OK] ${N}\n"
-  fi
-done;
+    # nm $filepath 2>/dev/null 1>/dev/null
+    # if [ $? -eq 139 ]
+    # then
+    #   printf "${R}${B}[nm $filepath : SEGV] ${N}"
+    # else
+    #   printf "${G}${B}[nm $filepath : OK] ${N}"
+    # fi
+    # ./ft_nm $filepath 2>/dev/null 1>/dev/null
+    # if [ $? -ne 0 ]
+    # then
+    #   printf "${R}${B}[ft_nm $filepathm : SEGV] ${N}\n"
+    # else
+    #   printf "${G}${B}[ft_nm $filepathm : OK] ${N}\n"
+    # fi
+  done
+done
 
 if [ $score -eq $total ]
 then
