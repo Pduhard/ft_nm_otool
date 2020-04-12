@@ -1,6 +1,10 @@
 #include "ft_nm.h"
 
-void *mapp_file(char *file_name, char *bin_name, off_t *fsize)
+
+void *strtab_addr = NULL;
+off_t fsize;
+
+void *mapp_file(char *file_name, char *bin_name, off_t *file_size)
 {
   int         fd;
   struct stat stat_buf;
@@ -11,7 +15,7 @@ void *mapp_file(char *file_name, char *bin_name, off_t *fsize)
     ft_fdprintf(2, "error: %s: can't open file: %s\n", bin_name, file_name);
     return (NULL);
   }
-  *fsize = stat_buf.st_size;
+  *file_size = stat_buf.st_size;
   if ((mapped_file = mmap(NULL, stat_buf.st_size, PROT_READ, MAP_PRIVATE, fd, 0)) == MAP_FAILED)
   {
     ft_fdprintf(2, "error: %s: can't map file: %s\n", bin_name, file_name);
@@ -21,6 +25,31 @@ void *mapp_file(char *file_name, char *bin_name, off_t *fsize)
   return (mapped_file);
 }
 
+int       check_arch_flags(t_nm_options *opt)
+{
+  int all;
+  int i;
+  const NXArchInfo  *archinfo;
+
+  all = 0;
+  i = 0;
+  while (opt->arch_flags[i])
+  {
+    if (!ft_strcmp(opt->arch_flags[i], "all"))
+      all = 1;
+    else if (!(archinfo = NXGetArchInfoFromName(opt->arch_flags[i])))
+      return (0);
+    i++;
+  }
+  if (all)
+  {
+    free(opt->arch_flags);
+    if (!(opt->arch_flags = ft_memalloc(sizeof(char *) * 2)))
+      return (0);
+    opt->arch_flags[0] = ft_strdup("all");
+  }
+  return (1);
+}
 uint32_t           update_str_tab(char ***tab_addr, char *new, char *prog_name)
 {
   uint32_t  i;
@@ -111,6 +140,10 @@ uint32_t  check_nm_flag(char **argv, uint32_t *i, void *opt_struct)
         ++(*i);
       }
     }
+    if (((options->flags | opt_flag) & OPT_MAJ_U) && ((options->flags | opt_flag ) & OPT_U))
+      return (ft_return_error(OPT_ERROR, "error: %s: can't specifiy both -U and -u\n", argv[0]));
+    if (opt_flag & OPT_MAJ_A)
+      opt_flag |= OPT_O;
     return (opt_flag);
 }
 
@@ -143,7 +176,7 @@ char  **parse_arguments(char **argv, void *opt_struct,
 
 int main(int argc, char **argv)
 {
-  off_t     fsize;
+  off_t     file_size;
   uint32_t  i;
   void      *mfile;
   char      **files;
@@ -153,12 +186,16 @@ int main(int argc, char **argv)
   ft_bzero(&opt, sizeof(t_nm_options));
   i = 0;
   if (!(files = parse_arguments(argv, &opt, &check_nm_flag, &opt.flags)))
-    return (ft_usage_error(1, NM_USAGE, argv[0])); // !!!!!! need to run with a.out !!!!!!
+    return (ft_usage_error(1, NM_USAGE, argv[0]));
+  if ((opt.flags & OPT_ARCH) && !check_arch_flags(&opt))
+    return (ft_usage_error(1, NM_USAGE, argv[0]));
+
+
   // printf("%x\n", opt.flags);
   while (files[i])
   {
-    if ((mfile = mapp_file(files[i], argv[0], &fsize)))
-      display_file_sym(mfile, files[i], fsize, &opt);
+    if ((mfile = mapp_file(files[i], argv[0], &file_size)))
+      display_file_sym(mfile, files[i], file_size, &opt);
     i++;
   }
   return (0);

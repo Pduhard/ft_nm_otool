@@ -90,6 +90,7 @@ void  handle_macho_file(void **mfile, t_pinfo *pinfo)
   if (!check_macho_file(*mfile, pinfo))
     return ;
   ncmds = get_number_load_command(*mfile, pinfo);
+  // printf("%lld\n", pinfo->fsize);
   //mprintf("avant loadc\n");
   load_c = (struct load_command *)(*mfile + (pinfo->arch == 64 ? sizeof(struct mach_header_64) : sizeof(struct mach_header)));
   while (ncmds--)
@@ -99,7 +100,8 @@ void  handle_macho_file(void **mfile, t_pinfo *pinfo)
     load_c = (void *)load_c + pinfo->get_uint32_t(load_c->cmdsize);
   }
 //  printf("sort avant\n");
-  sort_symtab(pinfo);
+  if (!(((t_nm_options *)pinfo->options)->flags & OPT_P))
+    sort_symtab(pinfo);
   //printf("sort apresm\n");
   assign_symbol(pinfo);
 }

@@ -124,6 +124,9 @@ typedef struct s_pinfo
   e_file_type   file_type; //
   char        *file_name;
   off_t       fsize;
+  //struct s_pinfo *from;
+  char        *ar_from;
+  char        *fat_arch_from;
 }             t_pinfo;
 
 /*  conversions functions */
@@ -143,6 +146,7 @@ void  handle_fat_file(void **mfile, t_pinfo *pinfo);
 void  handle_archive_file(void **mfile, t_pinfo *pinfo);
 
 /* check functions */
+int check_section_selected(t_pinfo *pinfo, uint8_t n_sect, uint8_t n_type);
 
 int  check_load_command(struct load_command *load_command, t_pinfo *pinfo, uint32_t load_cmd_id);
 int  check_lc_symtab(struct load_command *load_command, t_pinfo *pinfo, uint32_t load_cmd_id);

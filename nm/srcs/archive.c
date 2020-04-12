@@ -1,5 +1,7 @@
 #include "ft_nm.h"
 
+extern off_t fsize;
+
 int   check_archive_file(void *mfile, t_pinfo *pinfo)
 {
   struct ar_hdr *ar_hd;
@@ -125,13 +127,21 @@ void  handle_archive_file(void **mfile, t_pinfo *pinfo)
       fpinfo.fsize = ft_atoll(ar_hd->ar_size);
       fpinfo.file_name = pinfo->file_name;
       fpinfo.options = pinfo->options;
+      fpinfo.ar_from = name;
+      fsize = fpinfo.fsize;
       if (fpinfo.arch != 32 && fpinfo.arch != 64)
           ;//printf("arch in file chelou magic %d\n", hd->magic);
       else
       {
         if (fpinfo.file_type == MH_FILE)
         {
-          printf("\n%s(%s):\n", pinfo->file_name, name);
+          if (!(((t_nm_options *)pinfo->options)->flags & OPT_O))
+            printf("\n%s(%s)", pinfo->file_name, name);
+          if (pinfo->fat_arch_from && !(((t_nm_options *)pinfo->options)->flags & OPT_O))
+            printf(" (for architecture %s):\n", pinfo->fat_arch_from);
+          else if (!(((t_nm_options *)pinfo->options)->flags & OPT_O))
+            printf(":\n");
+
           mcurfile = (void *)hd;
 
           // printf("HFLUzefzefzefzef\n");

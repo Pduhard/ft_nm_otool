@@ -1,5 +1,7 @@
 #include "ft_nm.h"
 
+extern void *strtab_addr;
+
 int  check_lc_symtab(struct load_command *load_command, t_pinfo *pinfo, uint32_t load_cmd_id)
 {
   struct symtab_command *symtab_cmd;
@@ -39,12 +41,16 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
 {
   struct symtab_command *symtab_cmd;
   void                  *symtab;
-  void                  *strtab_addr;
+//  void                  *strtab_addr;
   uint32_t              nsyms;
   char                  *symname;
   struct nlist_64       nlist;
   char                  symbol;
   char                  *indr;
+  uint32_t              flags;
+
+
+  flags = ((t_nm_options *)pinfo->options)->flags;
   // struct section_64     *section;
 
   //printf("%zu, %zu\n", sizeof(int), sizeof(unsigned long));
@@ -52,6 +58,7 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
   symtab_cmd = (struct symtab_command *)addr;
   symtab = filestart + pinfo->get_uint32_t(symtab_cmd->symoff);
   strtab_addr = filestart + pinfo->get_uint32_t(symtab_cmd->stroff);
+//  printf("%lld\n", (unsigned long long)strtab_addr);
   nsyms = pinfo->get_uint32_t(symtab_cmd->nsyms);
   update_symtab_size(pinfo, nsyms);
   //printf("nb syms %u symoff %x stroff %x\n", nsyms, pinfo->get_uint32_t(symtab_cmd->symoff), symtab_cmd->stroff);
@@ -72,12 +79,17 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
       //  symname = (char *)(strtab_addr + pinfo->get_uint32_t(((struct nlist_64 *)(symtab))->n_un.n_strx));
       else
         symname = ft_strdup("bad string index");
+      nlist.n_un.n_strx = pinfo->get_uint32_t(((struct nlist *)(symtab))->n_un.n_strx);
       nlist.n_desc = pinfo->get_uint16_t(((struct nlist *)(symtab))->n_desc);
       nlist.n_value = pinfo->get_uint32_t(((struct nlist *)(symtab))->n_value);
       nlist.n_type = ((struct nlist *)(symtab))->n_type;
       nlist.n_sect = ((struct nlist *)(symtab))->n_sect;
       symbol = get_symbol(nlist.n_type, nlist.n_sect, nlist.n_value, pinfo);
-      if (symbol != '-' || (((t_nm_options *)pinfo->options)->flags & OPT_A))
+      if ((symbol != '-' || (flags & OPT_A))
+        && ((nlist.n_type & N_EXT) || !(flags & OPT_G))
+          && (!(flags & OPT_U) || (symbol == 'U' && !(nlist.n_type & ~(N_TYPE | N_EXT))))
+            && (!(flags & OPT_MAJ_U) || symbol != 'U' || (nlist.n_type & ~(N_TYPE | N_EXT)))
+              && (!(flags & OPT_S) || check_section_selected(pinfo, nlist.n_sect, nlist.n_type)))
       {
         if (symbol == 'I' || symbol == 'i')
         {
@@ -110,10 +122,16 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
 //      printf("%p %p diff %llu", symname, filestart, (unsigned long long)((unsigned long long)symname - (unsigned long long)filestart));
     //  printf("salut\n");
       nlist = *(struct nlist_64 *)(symtab);
+      nlist.n_un.n_strx = pinfo->get_uint32_t(nlist.n_un.n_strx);
       nlist.n_value = pinfo->get_uint64_t(nlist.n_value);
       nlist.n_desc = pinfo->get_uint16_t(nlist.n_desc);
       symbol = get_symbol(nlist.n_type, nlist.n_sect, nlist.n_value , pinfo);
-      if (symbol != '-' || (((t_nm_options *)pinfo->options)->flags & OPT_A))
+      if ((symbol != '-' || (flags & OPT_A))
+        && ((nlist.n_type & N_EXT) || !(flags & OPT_G))
+          && (!(flags & OPT_U) || (symbol == 'U' && !(nlist.n_type & ~(N_TYPE | N_EXT))))
+            && (!(flags & OPT_MAJ_U) || symbol != 'U' || (nlist.n_type & ~(N_TYPE | N_EXT)))
+              && (!(flags & OPT_S) || check_section_selected(pinfo, nlist.n_sect, nlist.n_type)))
+
       {
         if (symbol == 'I' || symbol == 'i')
         {

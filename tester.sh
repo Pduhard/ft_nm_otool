@@ -3,8 +3,31 @@
 test_dir="test_file"
 filelist=$(ls -1 ${test_dir})
 flags=(
-  ''
-  '-a'
+   ''
+   '-a'
+   '-g'
+   '-n'
+   '-o'
+   '-p'
+   '-r'
+   '-u'
+   '-U'
+   # '-m'
+   # '-x'
+   '-j'
+   '-l'
+   '-A'
+   '-P'
+   '-P -t d'
+   '-P -t o'
+   '-P -t x'
+   '-s '
+   '-s __DATA __data'
+   '-s __DATA __text'
+   '-s __DATA __bss'
+   '-s __TEXT __text'
+   '-s __data __DATA'
+   # '-arch all'
 );
 R="\e[0;31m"
 G="\e[0;32m"

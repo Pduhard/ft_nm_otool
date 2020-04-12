@@ -1,5 +1,6 @@
 #include "ft_nm.h"
 
+extern off_t fsize;
 void update_fat_symtab(t_pinfo *pinfo, t_pinfo *fpinfo)
 {
   t_symtab  *symtab;
@@ -40,6 +41,28 @@ void reverse_bytes(void *dst, void *src, size_t size)
   b = (unsigned char *)src;
   while (i < size)
     a[i++] = b[j--];
+}
+
+
+struct fat_arch *get_corr_fat_arch(const NXArchInfo *fat_arch_info, struct fat_header *fat_hd, struct fat_arch *fat_archs)
+{
+  uint32_t  i;
+  uint32_t  (*get)(uint32_t);
+  uint32_t      nfat_arch;
+
+  i = 0;
+  if (fat_hd->magic == FAT_MAGIC)
+    get = &same_uint32_t;
+  else
+    get = &reverse_uint32_t;
+  nfat_arch = get(fat_hd->nfat_arch);
+  while (i < nfat_arch)
+  {
+    if ((int)(get((fat_archs + i)->cputype)) == fat_arch_info->cputype && (int)get((fat_archs + i)->cpusubtype) == fat_arch_info->cpusubtype)
+      return (fat_archs + i);
+    i++;
+  }
+  return (NULL);
 }
 
 struct fat_arch *get_best_fat_arch(t_pinfo *pinfo, struct fat_header *fat_hd, struct fat_arch *fat_archs, struct fat_arch **fat_archs_rev)
@@ -88,11 +111,18 @@ void handle_fat_arch(struct mach_header_64 *hd, uint32_t size, t_pinfo *pinfo, u
 //  printf("%um\n", fat_arch->offset);
   fpinfo = get_parse_info((void *)hd);
   //mprintf("HALLO %s\n", (char *)&mhd->magic);
+  if (pinfo->fat_arch_from)
+  {
+    fpinfo.fat_arch_from = pinfo->fat_arch_from;
+  }
   if (display == FAT_ARCH_ALL)
   {
-//    printf("HALLO\n");
     if ((farch_info = NXGetArchInfoFromCpuType(fpinfo.get_uint32_t(hd->cputype), fpinfo.get_uint32_t(hd->cpusubtype))))
-      printf("\n%s (for architecture %s):\n", pinfo->file_name, farch_info->name);
+    {
+      fpinfo.fat_arch_from = (char *)farch_info->name;
+      if (!(((t_nm_options *)pinfo->options)->flags & OPT_O))
+        printf("\n%s (for architecture %s):\n", pinfo->file_name, farch_info->name);
+    }
     //else
     // printf("\n%s (for architecture UNKNOWN)\n", pinfo->file_name);
 //    printf("HLLO\n");
@@ -100,6 +130,7 @@ void handle_fat_arch(struct mach_header_64 *hd, uint32_t size, t_pinfo *pinfo, u
   fpinfo.fsize = size;
   fpinfo.file_name = pinfo->file_name;
   fpinfo.options = pinfo->options;
+  fsize = size;
   if (fpinfo.arch != 32 && fpinfo.arch != 64)
       printf("arch in file chelou magic %d\n", hd->magic);
   else
@@ -189,7 +220,12 @@ void  handle_fat_file(void **mfile, t_pinfo *pinfo)
   struct fat_header *fat_hd;
   struct fat_arch   *fat_arch;
   struct fat_arch   *fat_archs_rev;
+  char              **arch_flags;
+  const NXArchInfo  *fat_arch_info;
   uint32_t          i;
+  uint32_t          flags;
+
+  flags = ((t_nm_options *)pinfo->options)->flags;
   //uint32_t  nfat;
 //  struct fat_arch   *fhd;
   // t_pinfo   fpinfo;
@@ -210,24 +246,38 @@ void  handle_fat_file(void **mfile, t_pinfo *pinfo)
   fat_archs_rev = NULL;
   fat_hd = *(struct fat_header **)(mfile);
 //m  printf("%x\n", fat_hd->magic);
-  // if (!(options & OPT_ARCH))
+  if (!(flags & OPT_ARCH) && (fat_arch = get_best_fat_arch(pinfo, fat_hd, (struct fat_arch *)(*mfile + sizeof(struct fat_header)), &fat_archs_rev)))
+    handle_fat_arch((struct mach_header_64 *)(*mfile + fat_arch->offset), fat_arch->size, pinfo, FAT_ARCH_SPEC);
+  else if (!(flags & OPT_ARCH) || !ft_strcmp(((t_nm_options *)pinfo->options)->arch_flags[0], "all"))
   {
-    fat_arch = get_best_fat_arch(pinfo, fat_hd, (struct fat_arch *)(*mfile + sizeof(struct fat_header)), &fat_archs_rev);
-    if (fat_arch)
+    fat_arch = (struct fat_arch *)(*mfile + sizeof(struct fat_header));
+    fat_arch_info = NXGetArchInfoFromCpuType(pinfo->get_uint32_t(fat_arch->cputype), pinfo->get_uint32_t(fat_arch->cpusubtype));
+    pinfo->fat_arch_from = (char *)fat_arch_info->name;
+    while (i < pinfo->get_uint32_t(fat_hd->nfat_arch))
     {
-      handle_fat_arch((struct mach_header_64 *)(*mfile + fat_arch->offset), fat_arch->size, pinfo, FAT_ARCH_SPEC);
+        handle_fat_arch((struct mach_header_64 *)(*mfile + pinfo->get_uint32_t((fat_arch + i)->offset)), pinfo->get_uint32_t((fat_arch + i)->size), pinfo, FAT_ARCH_ALL);
+        i++;
     }
-    else
+  }
+  else
+  {
+    arch_flags = ((t_nm_options *)pinfo->options)->arch_flags;
+    i = 0;
+    while (arch_flags[i])
     {
-      fat_arch = (struct fat_arch *)(*mfile + sizeof(struct fat_header));
-      while (i < pinfo->get_uint32_t(fat_hd->nfat_arch))
+      if (fat_archs_rev)
+        free(fat_archs_rev);
+      fat_arch_info = NXGetArchInfoFromName(arch_flags[i]);
+      if ((fat_arch = get_corr_fat_arch(fat_arch_info, fat_hd, (struct fat_arch *)(*mfile + sizeof(struct fat_header)))))
       {
-          handle_fat_arch((struct mach_header_64 *)(*mfile + pinfo->get_uint32_t((fat_arch + i)->offset)), pinfo->get_uint32_t((fat_arch + i)->size), pinfo, FAT_ARCH_ALL);
-          i++;
+        pinfo->fat_arch_from = (char *)fat_arch_info->name;
+        printf("%s\n", pinfo->fat_arch_from);
+        handle_fat_arch((struct mach_header_64 *)(*mfile + pinfo->get_uint32_t(fat_arch->offset)), pinfo->get_uint32_t(fat_arch->size), pinfo, FAT_ARCH_ALL);
       }
+      else
+        ft_fdprintf(2, "does not contain architecture: %s\n", fat_arch_info->name);
+      i++;
     }
-    //printf("best cputype %x cpusub %x\n", fat_arch->cputype, fat_arch->cpusubtype);
-    //printf("info cputype %x cpusub %x\n", pinfo->myinfo->cputype, pinfo->myinfo->cpusubtype);
   }
 
   if (fat_archs_rev)

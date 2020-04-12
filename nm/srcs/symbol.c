@@ -1,12 +1,9 @@
 #include "ft_nm.h"
 
-char  get_section_symbol(t_pinfo *pinfo, uint8_t n_sect)
+int get_sect_names(char segname[16], char sectname[16], t_pinfo *pinfo, uint8_t n_sect)
 {
-  char  sectname[16];
-  char  segname[16];
-//  printf("ab %d\n", n_sect);
   if (n_sect == 0 || n_sect > pinfo->secid)
-    return ('S');
+    return (0);
   if (pinfo->arch == 32)
   {
     ft_memcpy(sectname, ((struct section *)(pinfo->sectab + n_sect - 1)->secaddr)->sectname, 16);
@@ -17,6 +14,31 @@ char  get_section_symbol(t_pinfo *pinfo, uint8_t n_sect)
     ft_memcpy(sectname, ((struct section_64 *)(pinfo->sectab + n_sect - 1)->secaddr)->sectname, 16);
     ft_memcpy(segname, ((struct section_64 *)(pinfo->sectab + n_sect - 1)->secaddr)->segname, 16);
   }
+  return (1);
+}
+
+int check_section_selected(t_pinfo *pinfo, uint8_t n_sect, uint8_t n_type)
+{
+  char  sectname[16];
+  char  segname[16];
+  t_nm_options  *options;
+
+  options = (t_nm_options *)pinfo->options;
+  if ((n_type & N_TYPE) != N_SECT || !get_sect_names(segname, sectname, pinfo, n_sect))
+    return (0);
+  if (!ft_strcmp(options->segname, segname) && !ft_strcmp(options->sectname, sectname))
+    return (1);
+  return (0);
+}
+
+char  get_section_symbol(t_pinfo *pinfo, uint8_t n_sect)
+{
+  char  sectname[16];
+  char  segname[16];
+//  printf("ab %d\n", n_sect);
+
+  if (!get_sect_names(segname, sectname, pinfo, n_sect))
+    return ('S');
 //  printf("zefzefzef\n");
   if (!ft_strcmp(sectname, SECT_TEXT) && !ft_strcmp(segname, SEG_TEXT))
     return ('T');
@@ -151,6 +173,61 @@ char  *get_stab_name(uint8_t n_type)
   return (undef);
 }
 
+
+void  human_readable_print_symbol(t_pinfo *pinfo, t_symtab *symbol)
+{
+  char  segname[16];
+  char  sectname[16];
+
+  if (symbol->symbol == 'U' || symbol->symbol == 'u' || symbol->symbol == 'I' || symbol->symbol == 'i')
+    printf(pinfo->arch == ARCH_32 ? "         " : "                 ");
+  else
+    printf(pinfo->arch == ARCH_32 ? "%08llx " : "%0816llx ", symbol->sym.n_value);
+  if ((symbol->sym.n_type & N_TYPE) == N_SECT)
+  {
+    if (get_sect_names(segname, sectname, pinfo, symbol->sym.n_sect))
+      printf("(%.16s,%.16s) ", segname, sectname);
+    else
+      printf("(,) ");
+  }
+  else if ((symbol->sym.n_type & N_TYPE) == N_UNDF)
+    printf(symbol->sym.n_value ? "(common) " : "(undefined) ");
+  else if ((symbol->sym.n_type & N_TYPE) == N_ABS)
+    printf("(absolute) ");
+  else if ((symbol->sym.n_type & N_TYPE) == N_INDR)
+    printf("(indirect) ");
+  else
+    printf("(undefined) ");
+  if ((symbol->sym.n_type & N_EXT))
+    printf("external %s\n", symbol->name);
+  else
+    printf("non-external %s\n", symbol->name);
+}
+
+void  print_xval_symbol(t_pinfo *pinfo, t_symtab *symtab)
+{
+  if (symtab->symbol == 'I' || symtab->symbol == 'i')
+    printf(pinfo->arch == ARCH_32 ? "%08llx %02hhx %02hhx %04hx %08x %s (indirect for %08llx %s)\n" : "%016llx %02hhx %02hhx %04hx %08x %s (indirect for %016llx %s)\n", symtab->sym.n_value, symtab->sym.n_type, symtab->sym.n_sect, symtab->sym.n_desc, symtab->sym.n_un.n_strx, (off_t)symtab->sym.n_un.n_strx > pinfo->fsize ? "(bad string index)" : symtab->name, symtab->sym.n_value, (off_t)symtab->sym.n_un.n_strx > pinfo->fsize ? "(bad string index)" : symtab->indr);
+  else
+    printf(pinfo->arch == ARCH_32 ? "%08llx %02hhx %02hhx %04hx %08x %s\n" : "%016llx %02hhx %02hhx %04hx %08x %s\n", symtab->sym.n_value, symtab->sym.n_type, symtab->sym.n_sect, symtab->sym.n_desc, symtab->sym.n_un.n_strx, (off_t)symtab->sym.n_un.n_strx > pinfo->fsize ? "(bad string index)" : symtab->name);
+}
+
+void  portable_output_format(t_pinfo *pinfo, t_symtab *symtab)
+{
+  // uint32_t flags;
+  t_nm_options *options;
+
+  options = (t_nm_options *)pinfo->options;
+
+  // flags = options->flags;
+  if ((options->flags & OPT_T) && options->format == F_OCT)
+    printf("%s %c %llo 0\n", symtab->name, symtab->symbol, symtab->sym.n_value);
+  else if ((options->flags & OPT_T) && options->format == F_DEC)
+    printf("%s %c %lld 0\n", symtab->name, symtab->symbol, symtab->sym.n_value);
+  else
+    printf("%s %c %llx 0\n", symtab->name, symtab->symbol, symtab->sym.n_value);
+}
+
 void  assign_symbol(t_pinfo *pinfo)
 {
   // t_symtab  *symtab;
@@ -178,7 +255,23 @@ void  assign_symbol(t_pinfo *pinfo)
     //  {
        //  printf("%c\n", (pinfo->symtab + i)->symbol);
        // printf("%s\n", (pinfo->symtab + i)->name);
-        if ((pinfo->symtab + i)->symbol == '-')
+        if ((options->flags & OPT_O))
+        {
+          if (pinfo->fat_arch_from)
+            printf("(for architecture %s):", pinfo->fat_arch_from);
+          printf("%s:", pinfo->file_name);
+          if (pinfo->ar_from)
+            printf("%s: ", pinfo->ar_from);
+          else
+            printf(" ");
+        }
+        // if ((options->flags & OPT_M))
+        //   human_readable_print_symbol(pinfo, pinfo->symtab + i);
+        if ((options->flags & OPT_X))
+          print_xval_symbol(pinfo, pinfo->symtab + i);
+        else if ((options->flags & OPT_MAJ_P))
+          portable_output_format(pinfo, pinfo->symtab + i);
+        else if ((pinfo->symtab + i)->symbol == '-')
         {
 
         printf(pinfo->arch == ARCH_32 ? "%08llx %c %02x %04x %5.5s %s\n" : "%016llx %c %02x %04x %5.5s %s\n", (pinfo->symtab + i)->sym.n_value,
@@ -187,13 +280,16 @@ void  assign_symbol(t_pinfo *pinfo)
           if (tmp)
             free(tmp);
         }
+        else if ((options->flags & (OPT_U | OPT_J)))
+          printf("%s\n", (pinfo->symtab + i)->name);
         else if ((pinfo->symtab + i)->symbol == 'I' || (pinfo->symtab + i)->symbol == 'i')
           printf(pinfo->arch == ARCH_32 ? "%8c %c %s (indirect for %s)\n" : "%16c %c %s (indirect for %s)\n", ' ', (pinfo->symtab + i)->symbol, (pinfo->symtab + i)->name, (pinfo->symtab + i)->indr);
         else if ((pinfo->symtab + i)->symbol != 'U' && (pinfo->symtab + i)->symbol != 'u')
           printf(pinfo->arch == ARCH_32 ? "%08llx %c %s\n" : "%016llx %c %s\n"/* strx %u, type %hhx sect %hhu, desc %hx\n"*/, (pinfo->symtab + i)->sym.n_value,
             (pinfo->symtab + i)->symbol, (pinfo->symtab + i)->name);//, ((struct nlist_64 *)((pinfo->symtab + i)->symaddr))->n_un.n_strx, ((struct nlist_64 *)((pinfo->symtab + i)->symaddr))->n_type, ((struct nlist_64 *)((pinfo->symtab + i)->symaddr))->n_sect, ((struct nlist_64 *)((pinfo->symtab + i)->symaddr))->n_desc);
+
         else
-           printf(pinfo->arch == ARCH_32 ? "%8c %c %s\n" : "%16c %c %s\n", ' ', (pinfo->symtab + i)->symbol, (pinfo->symtab + i)->name);
+          printf(pinfo->arch == ARCH_32 ? "%8c %c %s\n" : "%16c %c %s\n", ' ', (pinfo->symtab + i)->symbol, (pinfo->symtab + i)->name);
     //  }
     i++;
   }
