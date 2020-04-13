@@ -42,8 +42,11 @@
 
 # define OPT_END      0b1000000000000000000
 
-# define FAT_ARCH_ALL 0
-# define FAT_ARCH_SPEC 1
+# define DISPLAY_INFO_ON 1
+# define DISPLAY_INFO_OFF 2
+
+# define FAT_ARCH_ALL 4
+# define FAT_ARCH_SPEC 8
 
 /*                  */
 
@@ -127,6 +130,7 @@ typedef struct s_pinfo
   //struct s_pinfo *from;
   char        *ar_from;
   char        *fat_arch_from;
+  int         section_start;
 }             t_pinfo;
 
 /*  conversions functions */
@@ -142,11 +146,13 @@ uint64_t  same_uint64_t(uint64_t nb);
 t_pinfo      get_parse_info(void *mfile);
 
 void  handle_macho_file(void **mfile, t_pinfo *pinfo);
-void  handle_fat_file(void **mfile, t_pinfo *pinfo);
+void  handle_fat_file(void **mfile, t_pinfo *pinfo, uint32_t display);
 void  handle_archive_file(void **mfile, t_pinfo *pinfo);
 
 /* check functions */
 int check_section_selected(t_pinfo *pinfo, uint8_t n_sect, uint8_t n_type);
+int check_archs_in_file(void *mfile, t_pinfo *pinfo);
+int check_arch_in_file(cpu_type_t cputype, cpu_subtype_t cpusubtype, t_pinfo *pinfo, char *arch_name);
 
 int  check_load_command(struct load_command *load_command, t_pinfo *pinfo, uint32_t load_cmd_id);
 int  check_lc_symtab(struct load_command *load_command, t_pinfo *pinfo, uint32_t load_cmd_id);
@@ -177,7 +183,7 @@ void  assign_symbol(t_pinfo *pinfo);
 
 /*        */
 
-void  display_file_sym(void *mfile, char *file_name, off_t fsize, void *options);
+void  display_file_sym(void *mfile, t_pinfo *pinfo, uint32_t display);
 
 /*  error functions */
 

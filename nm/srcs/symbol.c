@@ -255,15 +255,15 @@ void  assign_symbol(t_pinfo *pinfo)
     //  {
        //  printf("%c\n", (pinfo->symtab + i)->symbol);
        // printf("%s\n", (pinfo->symtab + i)->name);
-        if ((options->flags & OPT_O))
+        if (((options->flags & OPT_O) && !(options->flags & OPT_MAJ_P)) || (options->flags & OPT_MAJ_A))
         {
           if (pinfo->fat_arch_from)
-            printf("(for architecture %s):", pinfo->fat_arch_from);
-          printf("%s:", pinfo->file_name);
+            printf((options->flags & OPT_MAJ_P) ? "(for architecture %s): " : "(for architecture %s):", pinfo->fat_arch_from);
+          printf("%s", pinfo->file_name);
           if (pinfo->ar_from)
-            printf("%s: ", pinfo->ar_from);
+            printf((options->flags & OPT_MAJ_P) ? "[%s]: " : ":%s: ", pinfo->ar_from);
           else
-            printf(" ");
+            printf(": ");
         }
         // if ((options->flags & OPT_M))
         //   human_readable_print_symbol(pinfo, pinfo->symtab + i);

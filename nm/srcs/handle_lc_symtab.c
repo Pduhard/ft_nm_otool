@@ -85,7 +85,15 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
       nlist.n_type = ((struct nlist *)(symtab))->n_type;
       nlist.n_sect = ((struct nlist *)(symtab))->n_sect;
       symbol = get_symbol(nlist.n_type, nlist.n_sect, nlist.n_value, pinfo);
-      if ((symbol != '-' || (flags & OPT_A))
+      if ((flags & OPT_L) && (flags & OPT_S) && check_section_selected(pinfo, nlist.n_sect, nlist.n_type))
+      {
+        if ((nlist.n_type & N_TYPE) == N_SECT)
+        {
+          if (nlist.n_value == pinfo->get_uint32_t(((struct section *)(pinfo->sectab + nlist.n_sect - 1)->secaddr)->addr))
+            pinfo->section_start = 1;
+        }
+      }
+      if ((symbol != '-' || ((flags & OPT_A) && !(flags & OPT_G)))
         && ((nlist.n_type & N_EXT) || !(flags & OPT_G))
           && (!(flags & OPT_U) || (symbol == 'U' && !(nlist.n_type & ~(N_TYPE | N_EXT))))
             && (!(flags & OPT_MAJ_U) || symbol != 'U' || (nlist.n_type & ~(N_TYPE | N_EXT)))
@@ -101,6 +109,7 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
             indr = ft_strndup((char *)(strtab_addr + nlist.n_value), pinfo->fsize - (off_t)((void *)(strtab_addr + nlist.n_value) - filestart));
         }
       //maprintf("salut sym\n");
+
         pinfo->symtab[pinfo->symid++] = (t_symtab){nlist, symbol, symname, indr};
       }
       else
@@ -126,7 +135,15 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
       nlist.n_value = pinfo->get_uint64_t(nlist.n_value);
       nlist.n_desc = pinfo->get_uint16_t(nlist.n_desc);
       symbol = get_symbol(nlist.n_type, nlist.n_sect, nlist.n_value , pinfo);
-      if ((symbol != '-' || (flags & OPT_A))
+      if ((flags & OPT_L) && (flags & OPT_S) && check_section_selected(pinfo, nlist.n_sect, nlist.n_type))
+      {
+        if ((nlist.n_type & N_TYPE) == N_SECT)
+        {
+          if (nlist.n_value == pinfo->get_uint64_t(((struct section_64 *)(pinfo->sectab + nlist.n_sect - 1)->secaddr)->addr))
+            pinfo->section_start = 1;
+        }
+      }
+      if ((symbol != '-' || ((flags & OPT_A) && !(flags & OPT_G)))
         && ((nlist.n_type & N_EXT) || !(flags & OPT_G))
           && (!(flags & OPT_U) || (symbol == 'U' && !(nlist.n_type & ~(N_TYPE | N_EXT))))
             && (!(flags & OPT_MAJ_U) || symbol != 'U' || (nlist.n_type & ~(N_TYPE | N_EXT)))
@@ -143,6 +160,7 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
             indr = ft_strndup((char *)(strtab_addr + nlist.n_value), pinfo->fsize - (off_t)((void *)(strtab_addr + nlist.n_value) - filestart));
         }
       //maprintf("salut sym\n");
+
         pinfo->symtab[pinfo->symid++] = (t_symtab){nlist, symbol, symname, indr};
       }
       else
@@ -158,6 +176,6 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
   //     printf("secname %s in seg %s\n", section->sectname, section->segname);
   //     section = (void *)section + sizeof(struct section_64);
   // }
-  // printf("segname %s vm addr %llx nb sections %u file off %llu\n", symtab->segname, symtab->vmaddr, symtab->nsects, symtab->fileoff);
+  // printf("segname %s vm addr %llx nb sections %u file off %llu\n", symtab->segname, symtab->addr, symtab->nsects, symtab->fileoff);
   // (void)pinfo;
 }

@@ -58,8 +58,10 @@ struct fat_arch *get_corr_fat_arch(const NXArchInfo *fat_arch_info, struct fat_h
   nfat_arch = get(fat_hd->nfat_arch);
   while (i < nfat_arch)
   {
-    if ((int)(get((fat_archs + i)->cputype)) == fat_arch_info->cputype && (int)get((fat_archs + i)->cpusubtype) == fat_arch_info->cpusubtype)
+    if ((int)(get((fat_archs + i)->cputype)) == fat_arch_info->cputype && (int)(get((fat_archs + i)->cpusubtype) & ~CPU_SUBTYPE_MASK) == (fat_arch_info->cpusubtype & ~CPU_SUBTYPE_MASK))
       return (fat_archs + i);
+    // if ((int)(get((fat_archs + i)->cputype)) == fat_arch_info->cputype && (int)get((fat_archs + i)->cpusubtype) == fat_arch_info->cpusubtype)
+    //   return (fat_archs + i);
     i++;
   }
   return (NULL);
@@ -108,31 +110,47 @@ void handle_fat_arch(struct mach_header_64 *hd, uint32_t size, t_pinfo *pinfo, u
   void                    *mcurfile;
   const NXArchInfo        *farch_info;
 
-//  printf("%um\n", fat_arch->offset);
+   // printf("%x\n", display);
   fpinfo = get_parse_info((void *)hd);
   //mprintf("HALLO %s\n", (char *)&mhd->magic);
-  if (pinfo->fat_arch_from)
+  if (!fpinfo.get_uint32_t)
+    return ;
+  if (pinfo->fat_arch_from && (display & FAT_ARCH_ALL))
   {
+    // printf("DUDE\n");
     fpinfo.fat_arch_from = pinfo->fat_arch_from;
   }
-  if (display == FAT_ARCH_ALL)
+  // if (display == FAT_ARCH_ALL)
+  // {
+    // printf("%x %x\n", hd->cputype, hd->cpusubtype);
+  if ((farch_info = NXGetArchInfoFromCpuType(fpinfo.get_uint32_t(hd->cputype), fpinfo.get_uint32_t(hd->cpusubtype))))
   {
-    if ((farch_info = NXGetArchInfoFromCpuType(fpinfo.get_uint32_t(hd->cputype), fpinfo.get_uint32_t(hd->cpusubtype))))
-    {
+    if ((display & FAT_ARCH_ALL))
       fpinfo.fat_arch_from = (char *)farch_info->name;
-      if (!(((t_nm_options *)pinfo->options)->flags & OPT_O))
-        printf("\n%s (for architecture %s):\n", pinfo->file_name, farch_info->name);
-    }
+    // if ((display & DISPLAY_INFO_ON))
+    //   printf()
+    // if (!(((t_nm_options *)pinfo->options)->flags & OPT_O))
+    //   printf("\n%s (for architecture %s):\n", pinfo->file_name, farch_info->name);
+  if (!(((t_nm_options *)pinfo->options)->flags & OPT_O) && (display & (DISPLAY_INFO_ON | FAT_ARCH_ALL)))
+    printf("\n%s", pinfo->file_name);
+  if (!(((t_nm_options *)pinfo->options)->flags & OPT_O) && (display & FAT_ARCH_ALL))
+    printf(" (for architecture %s):\n", fpinfo.fat_arch_from);
+  else if (!(((t_nm_options *)pinfo->options)->flags & OPT_O) && (display & DISPLAY_INFO_ON))
+    printf(":\n");
+  }
+
     //else
     // printf("\n%s (for architecture UNKNOWN)\n", pinfo->file_name);
-//    printf("HLLO\n");
-  }
+    // printf("HLLO\n");
+  // }
   fpinfo.fsize = size;
   fpinfo.file_name = pinfo->file_name;
   fpinfo.options = pinfo->options;
   fsize = size;
+
   if (fpinfo.arch != 32 && fpinfo.arch != 64)
-      printf("arch in file chelou magic %d\n", hd->magic);
+      ;//printf("arch in file chelou magic %d\n", hd->magic);
+
   else
   {
     if (fpinfo.file_type == MH_FILE)
@@ -205,6 +223,7 @@ int check_fat_file(void *mfile, t_pinfo *pinfo)
     fpinfo.fsize = pinfo->get_uint32_t((fat_arch + i)->size);
     fpinfo.file_name = pinfo->file_name;
     fpinfo.options = pinfo->options;
+    fpinfo.fat_arch_from = pinfo->file_name;
     // printf("bjr\n");
     if (fpinfo.file_type == MH_FILE && !check_macho_file(hd, &fpinfo))
       return (0);
@@ -215,7 +234,7 @@ int check_fat_file(void *mfile, t_pinfo *pinfo)
   return (1);
 }
 
-void  handle_fat_file(void **mfile, t_pinfo *pinfo)
+void  handle_fat_file(void **mfile, t_pinfo *pinfo, uint32_t display)
 {
   struct fat_header *fat_hd;
   struct fat_arch   *fat_arch;
@@ -237,7 +256,7 @@ void  handle_fat_file(void **mfile, t_pinfo *pinfo)
 
   //exit(0);
 
-  //printf("OUPS\n");
+  // printf("OUPS\n");
   if (!check_fat_file(*mfile, pinfo))
   {
       return ;
@@ -247,7 +266,7 @@ void  handle_fat_file(void **mfile, t_pinfo *pinfo)
   fat_hd = *(struct fat_header **)(mfile);
 //m  printf("%x\n", fat_hd->magic);
   if (!(flags & OPT_ARCH) && (fat_arch = get_best_fat_arch(pinfo, fat_hd, (struct fat_arch *)(*mfile + sizeof(struct fat_header)), &fat_archs_rev)))
-    handle_fat_arch((struct mach_header_64 *)(*mfile + fat_arch->offset), fat_arch->size, pinfo, FAT_ARCH_SPEC);
+    handle_fat_arch((struct mach_header_64 *)(*mfile + fat_arch->offset), fat_arch->size, pinfo, (display | FAT_ARCH_SPEC));
   else if (!(flags & OPT_ARCH) || !ft_strcmp(((t_nm_options *)pinfo->options)->arch_flags[0], "all"))
   {
     fat_arch = (struct fat_arch *)(*mfile + sizeof(struct fat_header));
@@ -255,7 +274,7 @@ void  handle_fat_file(void **mfile, t_pinfo *pinfo)
     pinfo->fat_arch_from = (char *)fat_arch_info->name;
     while (i < pinfo->get_uint32_t(fat_hd->nfat_arch))
     {
-        handle_fat_arch((struct mach_header_64 *)(*mfile + pinfo->get_uint32_t((fat_arch + i)->offset)), pinfo->get_uint32_t((fat_arch + i)->size), pinfo, FAT_ARCH_ALL);
+        handle_fat_arch((struct mach_header_64 *)(*mfile + pinfo->get_uint32_t((fat_arch + i)->offset)), pinfo->get_uint32_t((fat_arch + i)->size), pinfo, (display | FAT_ARCH_ALL));
         i++;
     }
   }
@@ -263,6 +282,7 @@ void  handle_fat_file(void **mfile, t_pinfo *pinfo)
   {
     arch_flags = ((t_nm_options *)pinfo->options)->arch_flags;
     i = 0;
+    // printf("éNnnnnn\n");
     while (arch_flags[i])
     {
       if (fat_archs_rev)
@@ -271,11 +291,13 @@ void  handle_fat_file(void **mfile, t_pinfo *pinfo)
       if ((fat_arch = get_corr_fat_arch(fat_arch_info, fat_hd, (struct fat_arch *)(*mfile + sizeof(struct fat_header)))))
       {
         pinfo->fat_arch_from = (char *)fat_arch_info->name;
-        printf("%s\n", pinfo->fat_arch_from);
-        handle_fat_arch((struct mach_header_64 *)(*mfile + pinfo->get_uint32_t(fat_arch->offset)), pinfo->get_uint32_t(fat_arch->size), pinfo, FAT_ARCH_ALL);
+        // printf("%s %x\n", arch_flags[1], display);
+        handle_fat_arch((struct mach_header_64 *)(*mfile + pinfo->get_uint32_t(fat_arch->offset)), pinfo->get_uint32_t(fat_arch->size), pinfo, arch_flags[1] ? (display | FAT_ARCH_ALL) : (display | FAT_ARCH_SPEC));
       }
       else
+      {
         ft_fdprintf(2, "does not contain architecture: %s\n", fat_arch_info->name);
+      }
       i++;
     }
   }

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-test_dir="test_file"
+test_dir="corrupted_files"
 filelist=$(ls -1 ${test_dir})
 flags=(
    ''
@@ -27,8 +27,31 @@ flags=(
    '-s __DATA __bss'
    '-s __TEXT __text'
    '-s __data __DATA'
-   # '-arch all'
+   '-arch little'
+   '-arch any'
+   '-arch big -arch ppc -arch i386'
+   '-arch x86_64'
+   '-arch all'
+   '-arch ppc'
+   '-arch ppc -arch x86_64 -arch i386'
+   '-pgno -arch all'
+   '-AP -t d -a'
+   '-ag'
+   '-AP'
+   '-oP'
+   '-ns __TEXT __text'
+   '-jl -P -td -arch x86_64'
+   '-pra'
+   '-Ao'
+   '-uU'
+   '-t d -U -ongP'
+   '-PAPA'
+   '-agnoprjlAP -t x -arch all'
+   '-ls __DATA __data'
+   '-ls __TEXT __text'
+   '-ls __DATA __bss'
 );
+
 R="\e[0;31m"
 G="\e[0;32m"
 Y="\e[0;33m"

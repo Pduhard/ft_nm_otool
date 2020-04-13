@@ -174,12 +174,52 @@ char  **parse_arguments(char **argv, void *opt_struct,
   return (files);
 }
 
+const NXArchInfo  *get_local_arch_info()
+{
+    const NXArchInfo *ainfo;
+
+    ainfo = NXGetLocalArchInfo();
+#if __LP64__
+    if (ainfo->cputype == CPU_TYPE_I386)
+      return (NXGetArchInfoFromName("x86_64"));
+#endif
+  return (ainfo);
+}
+
+
+t_pinfo      get_parse_info(void *mfile)
+{
+  uint32_t  magic;
+  char      *magic_str;
+
+
+  magic = *(uint32_t *)mfile;
+  magic_str = (char *)mfile;
+//  printf("magic: %0x\n", magic);
+  if (magic == MH_MAGIC)
+    return ((t_pinfo){&same_uint16_t, &same_uint32_t, &same_uint64_t, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 0, 32, MH_FILE, NULL, 0, NULL, NULL, 0});
+  if (magic == MH_CIGAM)
+    return ((t_pinfo){&reverse_uint16_t, &reverse_uint32_t, &reverse_uint64_t, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 1, 32, MH_FILE, NULL, 0, NULL, NULL, 0});
+  if (magic == MH_MAGIC_64)
+    return ((t_pinfo){&same_uint16_t, &same_uint32_t, &same_uint64_t, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 0, 64, MH_FILE, NULL, 0, NULL, NULL, 0});
+  if (magic == MH_CIGAM_64)
+    return ((t_pinfo){&reverse_uint16_t, &reverse_uint32_t, &reverse_uint64_t, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 1, 64, MH_FILE, NULL, 0, NULL, NULL, 0});
+  if (magic == FAT_MAGIC)
+    return ((t_pinfo){&same_uint16_t, &same_uint32_t, &same_uint64_t, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 0, 64, FAT_FILE, NULL, 0, NULL, NULL, 0});
+  if (magic == FAT_CIGAM)
+    return ((t_pinfo){&reverse_uint16_t, &reverse_uint32_t, &reverse_uint64_t, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 1, 64, FAT_FILE, NULL, 0, NULL, NULL, 0});
+  if (!ft_strncmp(magic_str, ARMAG, SARMAG))
+    return ((t_pinfo){&same_uint16_t, &same_uint32_t, &same_uint64_t, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 1, 64, ARCHIVE_FILE, NULL, 0, NULL, NULL, 0});
+  return ((t_pinfo){NULL, NULL, NULL, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 0, 0, UNKNOWN_FILE, NULL, 0, NULL, NULL, 0});
+}
+
 int main(int argc, char **argv)
 {
   off_t     file_size;
   uint32_t  i;
   void      *mfile;
   char      **files;
+  t_pinfo   pinfo;
   // uint32_t  options;
   t_nm_options  opt;
 
@@ -195,7 +235,15 @@ int main(int argc, char **argv)
   while (files[i])
   {
     if ((mfile = mapp_file(files[i], argv[0], &file_size)))
-      display_file_sym(mfile, files[i], file_size, &opt);
+    {
+      pinfo = get_parse_info(mfile);
+      pinfo.file_name = files[i];
+      pinfo.fsize = file_size;
+      pinfo.options = (void *)&opt;
+      // printf("%d\n", pinfo.file_type);
+      if (pinfo.arch == 32 || pinfo.arch == 64)
+        display_file_sym(mfile, &pinfo, files[1] ? DISPLAY_INFO_ON : DISPLAY_INFO_OFF);
+    }
     i++;
   }
   return (0);
