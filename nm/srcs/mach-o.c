@@ -4,16 +4,37 @@ int check_arch_in_file(cpu_type_t cputype, cpu_subtype_t cpusubtype, t_pinfo *pi
 {
   int check;
   const NXArchInfo  *arch_info;
+  const NXArchInfo  *all_info;
+  const NXArchInfo  *family;
+  // int family;
+
 
   check = 0;
-  // printf("HALO\n");
+  // printf("%d\n", family);
   if (pinfo->file_type == MH_FILE)
   {
-     arch_info = NXGetArchInfoFromName(arch_name);
+    arch_info = NXGetArchInfoFromName(arch_name);
+    if (!((t_nm_options *)pinfo->options)->arch_flags[1])
+    {
+     if (!(all_info = NXGetAllArchInfos()))
+       return (0);
+     family = NULL;
+     while (all_info->name)
+     {
+       if (all_info->cputype == arch_info->cputype)
+       {
+         // printf("%x %x ?\n", (all_info->cpusubtype & ~CPU_SUBTYPE_MASK), (arch_info->cpusubtype & ~CPU_SUBTYPE_MASK));
+         if ((all_info->cpusubtype & ~CPU_SUBTYPE_MASK) == (arch_info->cpusubtype & ~CPU_SUBTYPE_MASK))
+           family = all_info;
+         break ;
+       }
+       ++all_info;
+     }
+   }
      // printf("%x %x == %x %x\n", (uint32_t)arch_info->cputype, (uint32_t)arch_info->cpusubtype, pinfo->get_uint32_t(*((uint32_t *)(mfile + sizeof(uint32_t)))), pinfo->get_uint32_t(*((uint32_t *)(mfile + sizeof(uint32_t) * 2))));
 
     if (arch_info->cputype != cputype
-    || ((uint32_t)arch_info->cpusubtype & ~CPU_SUBTYPE_MASK) != (cpusubtype & ~CPU_SUBTYPE_MASK))
+    || (((uint32_t)arch_info->cpusubtype & ~CPU_SUBTYPE_MASK) != (cpusubtype & ~CPU_SUBTYPE_MASK) && !family))
       return (0);
     else
       return (1);
