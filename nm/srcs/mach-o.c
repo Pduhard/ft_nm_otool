@@ -193,7 +193,7 @@ void  create_section_start(t_pinfo *pinfo)
     pinfo->symtab = new_tab;
 }
 
-void  handle_macho_file(void **mfile, t_pinfo *pinfo)
+void  handle_macho_file(void **mfile, t_pinfo *pinfo, uint32_t display)
 {
   struct load_command *load_c;
   uint32_t            ncmds;
@@ -201,6 +201,7 @@ void  handle_macho_file(void **mfile, t_pinfo *pinfo)
 
   if (!check_macho_file(*mfile, pinfo))
     return ;
+
   ncmds = get_number_load_command(*mfile, pinfo);
   // printf("%lld\n", pinfo->fsize);
   //mprintf("avant loadc\n");
@@ -211,6 +212,11 @@ void  handle_macho_file(void **mfile, t_pinfo *pinfo)
     handle_load_command(load_c, pinfo, *mfile);
     load_c = (void *)load_c + pinfo->get_uint32_t(load_c->cmdsize);
   }
+  if (!(pinfo->symtab))
+    ft_fdprintf(2, "warning: %s: no name list\n", pinfo->file_name);
+  else if (display == DISPLAY_INFO_ON && !(((t_nm_options *)pinfo->options)->flags & OPT_O))
+    printf("\n%s:\n", pinfo->file_name);
+
 //  printf("sort avant\n");
   if ((((t_nm_options *)pinfo->options)->flags & OPT_L) && (((t_nm_options *)pinfo->options)->flags & OPT_S) && !pinfo->section_start)
   {

@@ -145,7 +145,7 @@ uint64_t  same_uint64_t(uint64_t nb);
 /*  file type handling functions */
 t_pinfo      get_parse_info(void *mfile);
 
-void  handle_macho_file(void **mfile, t_pinfo *pinfo);
+void  handle_macho_file(void **mfile, t_pinfo *pinfo, uint32_t display);
 void  handle_fat_file(void **mfile, t_pinfo *pinfo, uint32_t display);
 void  handle_archive_file(void **mfile, t_pinfo *pinfo);
 

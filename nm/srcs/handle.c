@@ -31,9 +31,7 @@ void     display_file_sym(void *mfile, t_pinfo *pinfo, uint32_t display)
     handle_archive_file(&mfile, pinfo);
   else
   {
-    if (display == DISPLAY_INFO_ON)
-      printf("%s:\n", pinfo->file_name);
-    handle_macho_file(&mfile, pinfo);
+    handle_macho_file(&mfile, pinfo, display);
   }
 //   ncmds = get_number_load_command(&mfile, pinfo);
 //   load_c = (struct load_command *)mfile;

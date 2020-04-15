@@ -185,7 +185,7 @@ void  handle_archive_file(void **mfile, t_pinfo *pinfo)
 
           //; printf("HFLUzefzefzefzef\n");
           // printf("%d %d\n", fpinfo.endian, fpinfo.arch);
-          handle_macho_file(&mcurfile, &fpinfo);
+          handle_macho_file(&mcurfile, &fpinfo, 0);
           // update_fat_symtab(pinfo, &fpinfo);
         }
         else

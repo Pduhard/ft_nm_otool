@@ -1,32 +1,32 @@
 #!/bin/bash
 
-test_dir="corrupted_files"
+test_dir="test_files"
 filelist=$(ls -1 ${test_dir})
 flags=(
-   # ''
-   # '-a'
-   # '-g'
-   # '-n'
-   # '-o'
-   # '-p'
-   # '-r'
-   # '-u'
-   # '-U'
+   ''
+   '-a'
+   '-g'
+   '-n'
+   '-o'
+   '-p'
+   '-r'
+   '-u'
+   '-U'
    # '-m'
    # '-x'
-   # '-j'
-   # '-l'
-   # '-A'
-   # '-P'
-   # '-P -t d'
-   # '-P -t o'
-   # '-P -t x'
-   # '-s '
-   # '-s __DATA __data'
-   # '-s __DATA __text'
-   # '-s __DATA __bss'
-   # '-s __TEXT __text'
-   # '-s __data __DATA'
+   '-j'
+   '-l'
+   '-A'
+   '-P'
+   '-P -t d'
+   '-P -t o'
+   '-P -t x'
+   '-s '
+   '-s __DATA __data'
+   '-s __DATA __text'
+   '-s __DATA __bss'
+   '-s __TEXT __text'
+   '-s __data __DATA'
    '-arch little'
    '-arch any'
    '-arch big -arch ppc -arch i386'
@@ -34,25 +34,25 @@ flags=(
    '-arch all'
    '-arch ppc'
    '-arch ppc -arch x86_64 -arch i386'
-   # '-pgno -arch all'
-   # '-AP -t d -a'
-   # '-ag'
-   # '-AP'
-   # '-oP'
-   # '-ns __TEXT __text'
-   # '-jl -P -td -arch x86_64'
-   # '-pra'
-   # '-Ao'
-   # '-uU'
-   # '-t d -U -ongP'
-   # '-PAPA'
-   # '-agnoprjlAP -t x -arch all'
-   # '-ls __DATA __data'
-   # '-ls __TEXT __text'
-   # '-ls __DATA __bss'
-   # '-ls __DATA __text'
-   # '-Prp'
-   # '-fAs __TEXT __text'
+   '-pgno -arch all'
+   '-AP -t d -a'
+   '-ag'
+   '-AP'
+   '-oP'
+   '-ns __TEXT __text'
+   '-jl -P -td -arch x86_64'
+   '-pra'
+   '-Ao'
+   '-uU'
+   '-t d -U -ongP'
+   '-PAPA'
+   '-agnoprjlAP -t x -arch all'
+   '-ls __DATA __data'
+   '-ls __TEXT __text'
+   '-ls __DATA __bss'
+   '-ls __DATA __text'
+   '-Prp'
+   '-fAs __TEXT __text'
 );
 
 R="\e[0;31m"
@@ -76,6 +76,7 @@ do
     stop_opt=1
   fi
 done
+
 
 for flag in "${flags[@]}"
 do
@@ -138,6 +139,24 @@ do
     # fi
   done
 done
+
+if [ -n "$flag" ]
+then
+  a=$(diff <(nm $flag $filelist 2>/dev/null) <(./ft_nm $flag $filelist 2>/dev/null))
+else
+  a=$(diff <(nm $filelist 2>/dev/null) <(./ft_nm $filelist 2>/dev/null))
+fi
+
+
+total=$(($total + 1))
+if [ $nm_ret -eq 139 ] && [ $? -ne 139 ]; then
+  score=$(($score + 1))
+  printf "${Y}${B}[ nm SEGV ][ nm $flag $test_dir/* ]${N}\n"
+elif [ $? -eq 139 ]; then
+  printf "${R}${B}[ SEGV ][ nm $flag $test_dir/* ]${N}\n"
+else
+  printf "${R}${B}[ KO ][ nm $flag $test_dir/* ]${N}\n"
+fi
 
 if [ $score -eq $total ]
 then

@@ -182,7 +182,7 @@ void handle_fat_arch(struct mach_header_64 *hd, t_pinfo fpinfo, t_pinfo *pinfo, 
       mcurfile = (void *)hd;
        // printf("HFLUzefzefzefzef\n");
       // printf("%d %d\n", fpinfo.endian, fpinfo.arch);
-      handle_macho_file(&mcurfile, &fpinfo);
+      handle_macho_file(&mcurfile, &fpinfo, 0);
       // update_fat_symtab(pinfo, &fpinfo);
     }
     else if (fpinfo.file_type == ARCHIVE_FILE)
