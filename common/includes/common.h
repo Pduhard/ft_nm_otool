@@ -1,8 +1,7 @@
-#ifndef FT_NM_H
-# define FT_NM_H
+#ifndef COMMON_H
+# define COMMON_H
 
 # include "../../libft/libft.h"
-# include "../../common/includes/common.h"
 # include <fcntl.h>
 # include <sys/stat.h>
 # include <sys/mman.h>
@@ -13,11 +12,6 @@
 # include <mach-o/ranlib.h>
 # include <mach-o/stab.h>
 # include <ar.h>
-
-/*        USAGE       */
-
-# define NM_USAGE "[-agnopruUmxjlfAP[s segname sectname] [-] [-t format] [[-arch <arch_flag>] ...] [file ...]"
-/*    OPTIONS define  */
 
 # define VALID_FLAGS  "agnopruUmxjlfAPs"
 # define OPT_ERROR    0
@@ -49,91 +43,97 @@
 # define FAT_ARCH_ALL 4
 # define FAT_ARCH_SPEC 8
 
-/*                  */
-
 # define ARCH_32  32
 # define ARCH_64  64
-// # define BIG_ENDIAN 0
-// # define LITTLE_ENDIAN 1
 
-// typedef struct s_symtab
-// {
-//   //void         *symaddr;
-//   struct nlist_64 sym;
-//   char          symbol;
-//   char         *name;
-//   char         *indr;
-// }              t_symtab;
-//
-// typedef struct s_sectab
-// {
-//   void         *secaddr;
-// }              t_sectab;
-//
-// typedef enum
-// {
-//   MH_FILE,
-//   FAT_FILE,
-//   ARCHIVE_FILE,
-//   UNKNOWN_FILE,
-// } e_file_type;
-//
-// typedef enum
-// {
-//   _ARCH_32,
-//   _ARCH_64,
-// } e_arch_type;
-//
-// typedef enum
-// {
-//   BIG,
-//   LITTLE,
-// } e_endian_type;
-//
-// typedef enum
-// {
-//   F_DEC,
-//   F_OCT,
-//   F_HEX,
-// } e_format;
-//
-// typedef struct s_cpu_info
-// {
-//   e_endian_type endian;
-//   e_arch_type   arch;
-// }               t_cpu_info;
-//
-// typedef struct s_nm_options
-// {
-//   uint32_t     flags;
-//   e_format     format;
-//   char         *segname;
-//   char         *sectname;
-//   char         **arch_flags;
-// }              t_nm_options;
-//
-// typedef struct s_pinfo
-// {
-//   uint16_t  (*get_uint16_t)(uint16_t);
-//   uint32_t  (*get_uint32_t)(uint32_t);
-//   uint64_t  (*get_uint64_t)(uint64_t);
-//   void      *options;
-//   const NXArchInfo  *myinfo;
-//   t_sectab  *sectab;
-//   t_symtab  *symtab;
-//   uint32_t  secid;
-//   uint32_t  symid;
-//   int   endian; //same 0 other 1
-//   int   arch;   //32x - 64x
-//   e_file_type   file_type; //
-//   char        *file_name;
-//   off_t       fsize;
-//   //struct s_pinfo *from;
-//   char        *ar_from;
-//   char        *fat_arch_from;
-//   int         section_start;
-//
-// }             t_pinfo;
+typedef struct s_symtab
+{
+  //void         *symaddr;
+  struct nlist_64 sym;
+  char          symbol;
+  char         *name;
+  char         *indr;
+}              t_symtab;
+
+typedef struct s_sectab
+{
+  void         *secaddr;
+}              t_sectab;
+
+typedef enum
+{
+  MH_FILE,
+  FAT_FILE,
+  ARCHIVE_FILE,
+  UNKNOWN_FILE,
+} e_file_type;
+
+typedef enum
+{
+  _ARCH_32,
+  _ARCH_64,
+} e_arch_type;
+
+typedef enum
+{
+  BIG,
+  LITTLE,
+} e_endian_type;
+
+typedef enum
+{
+  F_DEC,
+  F_OCT,
+  F_HEX,
+} e_format;
+
+typedef enum
+{
+  BIN_NM,
+  BIN_OTOOL,
+} e_bin;
+
+typedef struct s_cpu_info
+{
+  e_endian_type endian;
+  e_arch_type   arch;
+}               t_cpu_info;
+
+typedef struct s_nm_options
+{
+  uint32_t     flags;
+  e_format     format;
+  char         *segname;
+  char         *sectname;
+  char         **arch_flags;
+}              t_nm_options;
+
+typedef struct s_pinfo
+{
+  uint16_t  (*get_uint16_t)(uint16_t);
+  uint32_t  (*get_uint32_t)(uint32_t);
+  uint64_t  (*get_uint64_t)(uint64_t);
+  void      *options;
+  const NXArchInfo  *myinfo;
+  t_sectab    *sectab;
+  t_symtab    *symtab;
+  uint32_t    secid;
+  uint32_t    symid;
+  int         endian; //same 0 other 1
+  int         arch;   //32x - 64x
+  e_bin       bin;
+  void        (*print)(struct s_pinfo *, int);
+  e_file_type file_type; //
+  char        *file_name;
+  off_t       fsize;
+  //struct s_pinfo *from;
+  char        *ar_from;
+  char        *fat_arch_from;
+  int         section_start;
+
+}             t_pinfo;
+
+void *mapp_file(char *file_name, char *bin_name, off_t *file_size);
 
 /*  conversions functions */
 
@@ -145,7 +145,7 @@ uint64_t  reverse_uint64_t(uint64_t nb);
 uint64_t  same_uint64_t(uint64_t nb);
 
 /*  file type handling functions */
-// t_pinfo      get_parse_info(void *mfile);
+t_pinfo      get_parse_info(void *mfile, e_bin bin);
 void  handle_file(void *mfile, t_pinfo *pinfo, uint32_t display);
 
 void  handle_macho_file(void **mfile, t_pinfo *pinfo, uint32_t display);
@@ -181,6 +181,7 @@ void update_sectab_size(t_pinfo *pinfo, uint32_t addsize);
 void sort_symtab(t_pinfo *pinfo);
 
 /*        */
+int get_sect_names(char segname[16], char sectname[16], t_pinfo *pinfo, uint8_t n_sect);
 char  get_symbol(uint8_t n_type, uint8_t n_sect, uint64_t n_value, t_pinfo *pinfo);
 void  assign_symbol(t_pinfo *pinfo);
 
@@ -193,5 +194,6 @@ int     ft_memalloc_error(int ret, size_t size, char *prog_name);
 int     ft_return_error(int ret, char *message, ...);
 int     ft_usage_error(int ret, char *usage, char *prog_name);
 // int     return_memalloc_error(int retu, size_t size, char *prog_name);
+
 
 #endif

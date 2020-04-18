@@ -15,7 +15,7 @@ t_cpu_info   get_my_cpu_info(void)
 
 // uim
 
-void     display_file_sym(void *mfile, t_pinfo *pinfo, uint32_t display)
+void     handle_file(void *mfile, t_pinfo *pinfo, uint32_t display)
 {
   // t_pinfo             pinfo;
   // uint32_t            ncmds;
