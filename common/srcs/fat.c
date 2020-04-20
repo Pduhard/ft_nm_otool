@@ -169,6 +169,7 @@ void handle_fat_arch(struct mach_header_64 *hd, t_pinfo fpinfo, t_pinfo *pinfo, 
   // }
   fpinfo.file_name = pinfo->file_name;
   fpinfo.options = pinfo->options;
+  fpinfo.print = pinfo->print;
   // fsize = size;
 
   if (fpinfo.arch != 32 && fpinfo.arch != 64)

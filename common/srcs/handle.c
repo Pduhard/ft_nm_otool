@@ -1,8 +1,5 @@
 #include "common.h"
 
-
-// uim
-
 void *mapp_file(char *file_name, char *bin_name, off_t *file_size)
 {
   int         fd;
@@ -41,26 +38,24 @@ t_pinfo      get_parse_info(void *mfile, e_bin bin)
   uint32_t  magic;
   char      *magic_str;
 
-
-
   magic = *(uint32_t *)mfile;
   magic_str = (char *)mfile;
 //  printf("magic: %0x\n", magic);
   if (magic == MH_MAGIC)
-    return ((t_pinfo){&same_uint16_t, &same_uint32_t, &same_uint64_t, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 0, 32, bin, NULL, MH_FILE, NULL, 0, NULL, NULL, 0});
+    return ((t_pinfo){&same_uint16_t, &same_uint32_t, &same_uint64_t, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 0, 32, bin, NULL, MH_FILE, NULL, 0, NULL, NULL, 0, mfile});
   if (magic == MH_CIGAM)
-    return ((t_pinfo){&reverse_uint16_t, &reverse_uint32_t, &reverse_uint64_t, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 1, 32, bin, NULL, MH_FILE, NULL, 0, NULL, NULL, 0});
+    return ((t_pinfo){&reverse_uint16_t, &reverse_uint32_t, &reverse_uint64_t, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 1, 32, bin, NULL, MH_FILE, NULL, 0, NULL, NULL, 0, mfile});
   if (magic == MH_MAGIC_64)
-    return ((t_pinfo){&same_uint16_t, &same_uint32_t, &same_uint64_t, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 0, 64, bin, NULL, MH_FILE, NULL, 0, NULL, NULL, 0});
+    return ((t_pinfo){&same_uint16_t, &same_uint32_t, &same_uint64_t, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 0, 64, bin, NULL, MH_FILE, NULL, 0, NULL, NULL, 0, mfile});
   if (magic == MH_CIGAM_64)
-    return ((t_pinfo){&reverse_uint16_t, &reverse_uint32_t, &reverse_uint64_t, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 1, 64, bin, NULL, MH_FILE, NULL, 0, NULL, NULL, 0});
+    return ((t_pinfo){&reverse_uint16_t, &reverse_uint32_t, &reverse_uint64_t, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 1, 64, bin, NULL, MH_FILE, NULL, 0, NULL, NULL, 0, mfile});
   if (magic == FAT_MAGIC)
-    return ((t_pinfo){&same_uint16_t, &same_uint32_t, &same_uint64_t, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 0, 64, bin, NULL, FAT_FILE, NULL, 0, NULL, NULL, 0});
+    return ((t_pinfo){&same_uint16_t, &same_uint32_t, &same_uint64_t, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 0, 64, bin, NULL, FAT_FILE, NULL, 0, NULL, NULL, 0, mfile});
   if (magic == FAT_CIGAM)
-    return ((t_pinfo){&reverse_uint16_t, &reverse_uint32_t, &reverse_uint64_t, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 1, 64, bin, NULL, FAT_FILE, NULL, 0, NULL, NULL, 0});
+    return ((t_pinfo){&reverse_uint16_t, &reverse_uint32_t, &reverse_uint64_t, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 1, 64, bin, NULL, FAT_FILE, NULL, 0, NULL, NULL, 0, mfile});
   if (!ft_strncmp(magic_str, ARMAG, SARMAG))
-    return ((t_pinfo){&same_uint16_t, &same_uint32_t, &same_uint64_t, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 1, 64, bin, NULL, ARCHIVE_FILE, NULL, 0, NULL, NULL, 0});
-  return ((t_pinfo){NULL, NULL, NULL, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 0, 0, bin, NULL, UNKNOWN_FILE, NULL, 0, NULL, NULL, 0});
+    return ((t_pinfo){&same_uint16_t, &same_uint32_t, &same_uint64_t, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 1, 64, bin, NULL, ARCHIVE_FILE, NULL, 0, NULL, NULL, 0, mfile});
+  return ((t_pinfo){NULL, NULL, NULL, NULL, get_local_arch_info(), NULL, NULL, 0, 0, 0, 0, bin, NULL, UNKNOWN_FILE, NULL, 0, NULL, NULL, 0, mfile});
 }
 
 void     handle_file(void *mfile, t_pinfo *pinfo, uint32_t display)
@@ -77,11 +72,11 @@ void     handle_file(void *mfile, t_pinfo *pinfo, uint32_t display)
   // printf("%hhx\n", *(char *)&hd->magic);
   else if (pinfo->file_type == ARCHIVE_FILE)
     handle_archive_file(&mfile, pinfo);
-  else
+  else if (pinfo->file_type == MH_FILE)
   {
     handle_macho_file(&mfile, pinfo, display);
   }
-//   ncmds = get_number_load_command(&mfile, pinfo);
+  //   ncmds = get_number_load_command(&mfile, pinfo);
 //   load_c = (struct load_command *)mfile;
 //   while (ncmds--)
 //   {

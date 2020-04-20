@@ -111,13 +111,21 @@ int   check_archive_file(void *mfile, t_pinfo *pinfo)
 char  *get_ar_name(struct ar_hdr *ar_hd, uint32_t *extended)
 {
   uint32_t  i;
+  uint32_t ext;
 
-  if ((*extended = ft_strncmp(ar_hd->ar_name, AR_EFMT1, ft_strlen(AR_EFMT1)) ? 0 : 1))
-    return (ft_strdup((char *)(ar_hd + 1)));
+
+  if ((ext = ft_strncmp(ar_hd->ar_name, AR_EFMT1, ft_strlen(AR_EFMT1)) ? 0 : 1))
+  {
+    if (*extended == (uint32_t)-1)
+      *extended = ext;
+    return (ft_strndup((char *)(ar_hd + 1), ft_atoll(ar_hd->ar_name + ft_strlen(AR_EFMT1))));
+  }
+  if (*extended == (uint32_t)-1)
+    *extended = 0;
   i = 0;
   while (ar_hd->ar_name[i] != ' ' && i < sizeof(ar_hd->ar_name))
     ++i;
-  return (ft_strndup(ar_hd->ar_name, i));
+  return (ft_strtrim(ft_strndup(ar_hd->ar_name, sizeof(ar_hd->ar_name))));
 }
 
 void  handle_archive_file(void **mfile, t_pinfo *pinfo)
@@ -130,10 +138,13 @@ void  handle_archive_file(void **mfile, t_pinfo *pinfo)
   char          *name;
 
 
- if (pinfo->bin == BIN_NM && !check_archive_file(*mfile, pinfo))
+  if (pinfo->bin == BIN_NM && !check_archive_file(*mfile, pinfo))
    return ;
+  else if (pinfo->bin == BIN_OTOOL)
+   printf("Archive : %s\n", pinfo->file_name);
   ar_hd = (struct ar_hdr *)(*mfile + SARMAG);
 //  printf("%zu\n", sizeof(long));
+  extended = (uint32_t)-1;
   while ((off_t)((void *)ar_hd - *mfile) < pinfo->fsize)
   {
     if (!(name = get_ar_name(ar_hd, &extended)))
@@ -171,7 +182,10 @@ void  handle_archive_file(void **mfile, t_pinfo *pinfo)
       fpinfo.fat_arch_from = pinfo->fat_arch_from;
       // fsize = fpinfo.fsize;
       if (fpinfo.arch != 32 && fpinfo.arch != 64)
-          ;//printf("arch in file chelou magic %d\n", hd->magic);
+      {
+        if (pinfo->bin == BIN_OTOOL)
+          printf("%s(%s): is not an object file\n", pinfo->file_name, name);
+      }
       else
       {
         if (fpinfo.file_type == MH_FILE)
@@ -192,8 +206,8 @@ void  handle_archive_file(void **mfile, t_pinfo *pinfo)
           handle_macho_file(&mcurfile, &fpinfo, 0);
           // update_fat_symtab(pinfo, &fpinfo);
         }
-        else
-          ;//printf("magic %d in FAT file\n", hd->magic);
+        else if (pinfo->bin == BIN_OTOOL)
+          printf("%s(%s): is not an object file\n", pinfo->file_name, name);
       }
 
     }

@@ -61,12 +61,21 @@ Y="\e[0;33m"
 N="\e[0m"
 B="\e[1m"
 score=0;
+bin="./ft_otool"
+ref_bin="otool -t"
+# bin=""
 total=$(ls -1 ${test_dir} | wc -l);
 total=$(echo $total "*" ${#flags[@]} | bc);
 diff_opt=0;
 stop_opt=0;
+
 for arg in $*
 do
+  if [ $arg == "nm" ]
+  then
+    bin="./ft_nm"
+    ref_bin="nm"
+  fi
   if [ $arg == "-d" ] || [ $arg == "-diff" ] || [ $arg == "-ds" ] || [ $arg == "-sd" ]
   then
     diff_opt=1
@@ -86,35 +95,35 @@ do
     filepath="${test_dir}/${x}"
     if [ -n "$flag" ]
     then
-      a=$(diff <(nm $flag $filepath 2>/dev/null) <(./ft_nm $flag $filepath 2>/dev/null))
+      a=$(diff <($ref_bin $flag $filepath 2>/dev/null) <($bin $flag $filepath 2>/dev/null))
     else
-      a=$(diff <(nm $filepath 2>/dev/null) <(./ft_nm $filepath 2>/dev/null))
+      a=$(diff <($ref_bin $filepath 2>/dev/null) <($bin $filepath 2>/dev/null))
     fi
     if [ ${#a} -eq 0 ]
     then
-      printf "${G}${B}[ OK ][ nm $flag $filepath ]${N}\n"
+      printf "${G}${B}[ OK ][ $ref_bin $flag $filepath ]${N}\n"
       score=$(($score + 1))
     else
     {
       printf "\n"
-      nm $filepath 2>/dev/null 1>/dev/null
-      nm_ret=$?
-      ./ft_nm $filepath 2>/dev/null 1>/dev/null
-      if [ $nm_ret -eq 139 ] && [ $? -ne 139 ]; then
+      $ref_bin $filepath 2>/dev/null 1>/dev/null
+      ref_bin_ret=$?
+      $bin $filepath 2>/dev/null 1>/dev/null
+      if [ $ref_bin_ret -eq 139 ] && [ $? -ne 139 ]; then
         score=$(($score + 1))
-        printf "${Y}${B}[ nm SEGV ][ nm $flag $filepath ]${N}\n"
+        printf "${Y}${B}[ $ref_bin SEGV ][ $ref_bin $flag $filepath ]${N}\n"
       elif [ $? -eq 139 ]; then
-        printf "${R}${B}[ SEGV ][ nm $flag $filepath ]${N}\n"
+        printf "${R}${B}[ SEGV ][ $ref_bin $flag $filepath ]${N}\n"
       else
-        printf "${R}${B}[ KO ][ nm $flag $filepath ]${N}\n"
+        printf "${R}${B}[ KO ][ $ref_bin $flag $filepath ]${N}\n"
       fi
       if [ $diff_opt -eq 1 ]
       then
         if [ -n "$flag" ]
         then
-          diff <(nm $flag $filepath 2>/dev/null) <(./ft_nm $flag $filepath 2>/dev/null)
+          diff <($ref_bin $flag $filepath 2>/dev/null) <($bin $flag $filepath 2>/dev/null)
         else
-          diff <(nm $filepath 2>/dev/null) <(./ft_nm $filepath 2>/dev/null)
+          diff <($ref_bin $filepath 2>/dev/null) <($bin $filepath 2>/dev/null)
         fi
       fi
       if [ $stop_opt -eq 1 ]
@@ -123,39 +132,39 @@ do
       fi
     }
     fi
-    # nm $filepath 2>/dev/null 1>/dev/null
+    # $ref_bin $filepath 2>/dev/null 1>/dev/null
     # if [ $? -eq 139 ]
     # then
-    #   printf "${R}${B}[nm $filepath : SEGV] ${N}"
+    #   printf "${R}${B}[$ref_bin $filepath : SEGV] ${N}"
     # else
-    #   printf "${G}${B}[nm $filepath : OK] ${N}"
+    #   printf "${G}${B}[$ref_bin $filepath : OK] ${N}"
     # fi
-    # ./ft_nm $filepath 2>/dev/null 1>/dev/null
+    # $bin $filepath 2>/dev/null 1>/dev/null
     # if [ $? -ne 0 ]
     # then
-    #   printf "${R}${B}[ft_nm $filepathm : SEGV] ${N}\n"
+    #   printf "${R}${B}[ft_$ref_bin $filepathm : SEGV] ${N}\n"
     # else
-    #   printf "${G}${B}[ft_nm $filepathm : OK] ${N}\n"
+    #   printf "${G}${B}[ft_$ref_bin $filepathm : OK] ${N}\n"
     # fi
   done
 done
 
 if [ -n "$flag" ]
 then
-  a=$(diff <(nm $flag $filelist 2>/dev/null) <(./ft_nm $flag $filelist 2>/dev/null))
+  a=$(diff <($ref_bin $flag $filelist 2>/dev/null) <($bin $flag $filelist 2>/dev/null))
 else
-  a=$(diff <(nm $filelist 2>/dev/null) <(./ft_nm $filelist 2>/dev/null))
+  a=$(diff <($ref_bin $filelist 2>/dev/null) <($bin $filelist 2>/dev/null))
 fi
 
 
 total=$(($total + 1))
-if [ $nm_ret -eq 139 ] && [ $? -ne 139 ]; then
+if [ $ref_bin_ret -eq 139 ] && [ $? -ne 139 ]; then
   score=$(($score + 1))
-  printf "${Y}${B}[ nm SEGV ][ nm $flag $test_dir/* ]${N}\n"
+  printf "${Y}${B}[ $ref_bin SEGV ][ $ref_bin $flag $test_dir/* ]${N}\n"
 elif [ $? -eq 139 ]; then
-  printf "${R}${B}[ SEGV ][ nm $flag $test_dir/* ]${N}\n"
+  printf "${R}${B}[ SEGV ][ $ref_bin $flag $test_dir/* ]${N}\n"
 else
-  printf "${R}${B}[ KO ][ nm $flag $test_dir/* ]${N}\n"
+  printf "${R}${B}[ KO ][ $ref_bin $flag $test_dir/* ]${N}\n"
 fi
 
 if [ $score -eq $total ]

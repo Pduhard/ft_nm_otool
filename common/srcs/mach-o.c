@@ -214,7 +214,7 @@ void  handle_macho_file(void **mfile, t_pinfo *pinfo, uint32_t display)
   }
   // if (pinfo->bin == BIN_NM)
   // {
-   // printf("azdazd %p\n", pinfo->print);
+    // printf("azdazd %p\n", pinfo->print);
     pinfo->print(pinfo, display);
   //   if (!(pinfo->symtab))
   //     ft_fdprintf(2, "warning: %s: no name list\n", pinfo->file_name);

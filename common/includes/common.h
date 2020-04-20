@@ -50,9 +50,9 @@ typedef struct s_symtab
 {
   //void         *symaddr;
   struct nlist_64 sym;
-  char          symbol;
-  char         *name;
-  char         *indr;
+  char            symbol;
+  char            *name;
+  char            *indr;
 }              t_symtab;
 
 typedef struct s_sectab
@@ -130,7 +130,7 @@ typedef struct s_pinfo
   char        *ar_from;
   char        *fat_arch_from;
   int         section_start;
-
+  void        *file_start;
 }             t_pinfo;
 
 void *mapp_file(char *file_name, char *bin_name, off_t *file_size);

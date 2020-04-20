@@ -1,11 +1,5 @@
 #include "ft_nm.h"
 
-
-void *strtab_addr = NULL;
-off_t fsize;
-
-
-
 int       check_arch_flags(t_nm_options *opt)
 {
   int all;

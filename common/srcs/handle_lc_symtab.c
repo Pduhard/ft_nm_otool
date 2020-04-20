@@ -1,7 +1,5 @@
 #include "common.h"
 
-// extern void *strtab_addr;
-
 int get_sect_names(char segname[16], char sectname[16], t_pinfo *pinfo, uint8_t n_sect)
 {
   if (n_sect == 0 || n_sect > pinfo->secid)
@@ -130,7 +128,7 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
   // struct section_64     *section;
 
   //printf("%zu, %zu\n", sizeof(int), sizeof(unsigned long));
-  indr = NULL;
+
   symtab_cmd = (struct symtab_command *)addr;
   symtab = filestart + pinfo->get_uint32_t(symtab_cmd->symoff);
   strtab_addr = filestart + pinfo->get_uint32_t(symtab_cmd->stroff);
@@ -140,6 +138,7 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
   //printf("nb syms %u symoff %x stroff %x\n", nsyms, pinfo->get_uint32_t(symtab_cmd->symoff), symtab_cmd->stroff);
   while (nsyms--)
   {
+    indr = NULL;
     //printf("%u\n", ((struct nlist *)(symtab))->n_un.n_strx);
     if (pinfo->arch == 32)
     {
