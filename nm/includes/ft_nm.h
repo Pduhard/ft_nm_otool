@@ -136,62 +136,62 @@
 // }             t_pinfo;
 
 /*  conversions functions */
-
-uint16_t  reverse_uint16_t(uint16_t nb);
-uint16_t  same_uint16_t(uint16_t nb);
-uint32_t  reverse_uint32_t(uint32_t nb);
-uint32_t  same_uint32_t(uint32_t nb);
-uint64_t  reverse_uint64_t(uint64_t nb);
-uint64_t  same_uint64_t(uint64_t nb);
-
-/*  file type handling functions */
-// t_pinfo      get_parse_info(void *mfile);
-void  handle_file(void *mfile, t_pinfo *pinfo, uint32_t display);
-
-void  handle_macho_file(void **mfile, t_pinfo *pinfo, uint32_t display);
-void  handle_fat_file(void **mfile, t_pinfo *pinfo, uint32_t display);
-void  handle_archive_file(void **mfile, t_pinfo *pinfo);
-
-/* check functions */
-int check_section_selected(t_pinfo *pinfo, uint8_t n_sect, uint8_t n_type);
-int check_archs_in_file(void *mfile, t_pinfo *pinfo);
-int check_arch_in_file(cpu_type_t cputype, cpu_subtype_t cpusubtype, t_pinfo *pinfo, char *arch_name);
-
-int  check_load_command(struct load_command *load_command, t_pinfo *pinfo, uint32_t load_cmd_id);
-int  check_lc_symtab(struct load_command *load_command, t_pinfo *pinfo, uint32_t load_cmd_id);
-int  check_lc_segment(struct load_command *load_command, t_pinfo *pinfo, uint32_t load_cmd_id);
-int  check_lc_segment_64(struct load_command *load_command, t_pinfo *pinfo, uint32_t load_cmd_id);
-int  check_macho_file(void *mfile, t_pinfo *pinfo);
-int  check_archive_file(void *mfile, t_pinfo *pinfo);
-
-/*  command handle functions  */
-void handle_load_command(struct load_command *load_command, t_pinfo *pinfo, void *filestart);
-
-void handle_lc_segment_64(void *addr, t_pinfo *pinfo);
-void handle_lc_segment(void *addr, t_pinfo *pinfo);
-void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart);
-
-/*  utils functions */
-
-void update_symtab_size(t_pinfo *pinfo, uint32_t addsize);
-void update_sectab_size(t_pinfo *pinfo, uint32_t addsize);
-
-/*  sort functions (maybe up section) */
-
-void sort_symtab(t_pinfo *pinfo);
-
-/*        */
-char  get_symbol(uint8_t n_type, uint8_t n_sect, uint64_t n_value, t_pinfo *pinfo);
-void  assign_symbol(t_pinfo *pinfo);
-
-/*        */
-
-
-/*  error functions */
-
-int     ft_memalloc_error(int ret, size_t size, char *prog_name);
-int     ft_return_error(int ret, char *message, ...);
-int     ft_usage_error(int ret, char *usage, char *prog_name);
+//
+// uint16_t  reverse_uint16_t(uint16_t nb);
+// uint16_t  same_uint16_t(uint16_t nb);
+// uint32_t  reverse_uint32_t(uint32_t nb);
+// uint32_t  same_uint32_t(uint32_t nb);
+// uint64_t  reverse_uint64_t(uint64_t nb);
+// uint64_t  same_uint64_t(uint64_t nb);
+//
+// /*  file type handling functions */
+// // t_pinfo      get_parse_info(void *mfile);
+// void  handle_file(void *mfile, t_pinfo *pinfo, uint32_t display);
+//
+// void  handle_macho_file(void **mfile, t_pinfo *pinfo, uint32_t display);
+// void  handle_fat_file(void **mfile, t_pinfo *pinfo, uint32_t display);
+// void  handle_archive_file(void **mfile, t_pinfo *pinfo);
+//
+// /* check functions */
+// int check_section_selected(t_pinfo *pinfo, uint8_t n_sect, uint8_t n_type);
+// int check_archs_in_file(void *mfile, t_pinfo *pinfo);
+// int check_arch_in_file(cpu_type_t cputype, cpu_subtype_t cpusubtype, t_pinfo *pinfo, char *arch_name);
+//
+// int  check_load_command(struct load_command *load_command, t_pinfo *pinfo, uint32_t load_cmd_id);
+// int  check_lc_symtab(struct load_command *load_command, t_pinfo *pinfo, uint32_t load_cmd_id);
+// int  check_lc_segment(struct load_command *load_command, t_pinfo *pinfo, uint32_t load_cmd_id);
+// int  check_lc_segment_64(struct load_command *load_command, t_pinfo *pinfo, uint32_t load_cmd_id);
+// int  check_macho_file(void *mfile, t_pinfo *pinfo);
+// int  check_archive_file(void *mfile, t_pinfo *pinfo);
+//
+// /*  command handle functions  */
+// void handle_load_command(struct load_command *load_command, t_pinfo *pinfo, void *filestart);
+//
+// void handle_lc_segment_64(void *addr, t_pinfo *pinfo);
+// void handle_lc_segment(void *addr, t_pinfo *pinfo);
+// void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart);
+//
+// /*  utils functions */
+//
+// void update_symtab_size(t_pinfo *pinfo, uint32_t addsize);
+// void update_sectab_size(t_pinfo *pinfo, uint32_t addsize);
+//
+// /*  sort functions (maybe up section) */
+//
+// void sort_symtab(t_pinfo *pinfo);
+//
+// /*        */
+// char  get_symbol(uint8_t n_type, uint8_t n_sect, uint64_t n_value, t_pinfo *pinfo);
+// void  assign_symbol(t_pinfo *pinfo);
+//
+// /*        */
+//
+//
+// /*  error functions */
+//
+// int     ft_memalloc_error(int ret, size_t size, char *prog_name);
+// int     ft_return_error(int ret, char *message, ...);
+// int     ft_usage_error(int ret, char *usage, char *prog_name);
 // int     return_memalloc_error(int retu, size_t size, char *prog_name);
 
 #endif

@@ -246,7 +246,7 @@ int main(int argc, char **argv)
   // printf("%x\n", opt.flags);
   while (files[i])
   {
-    if ((mfile = mapp_file(files[i], argv[0], &file_size)))
+    if ((mfile = mapp_file(files[i], argv[0], &file_size, BIN_NM)))
     {
       pinfo = get_parse_info(mfile, BIN_NM);
       pinfo.file_name = files[i];

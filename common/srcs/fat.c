@@ -94,6 +94,7 @@ struct fat_arch *get_best_fat_arch(t_pinfo *pinfo, struct fat_header *fat_hd, st
   struct fat_arch *best;
   uint32_t      nfat_arch;
 
+  // printf("%x == %x %x == %x\n", pinfo->myinfo->cputype, pinfo->cputype, pinfo->myinfo->cpusubtype, pinfo->cpusubtype);
   if (fat_hd->magic == FAT_MAGIC)
   {
     return (NXFindBestFatArch(pinfo->myinfo->cputype, pinfo->myinfo->cpusubtype, fat_archs, fat_hd->nfat_arch));
@@ -115,7 +116,7 @@ struct fat_arch *get_best_fat_arch(t_pinfo *pinfo, struct fat_header *fat_hd, st
 //      printf("%08x %08x %08x %08d %08x\n\n", (*fat_archs_rev)[i].cputype, (*fat_archs_rev)[i].cpusubtype, (*fat_archs_rev)[i].offset, (*fat_archs_rev)[i].size, (*fat_archs_rev)[i].align);
       i++;
     }
-  //  printf("nmae %s %08x %08x\n",pinfo->myinfo->name, pinfo->myinfo->cputype, pinfo->myinfo->cpusubtype);
+  //  printf("nmae %s %08x %08x\n",pinfo->name, pinfo->myinfo->cputype, pinfo->myinfo->cpusubtype);
     best = NXFindBestFatArch(pinfo->myinfo->cputype, pinfo->myinfo->cpusubtype, *fat_archs_rev, nfat_arch);
     //free(fat_archs_rev);
   //m printf("salut %p\n", best);
@@ -134,7 +135,7 @@ void handle_fat_arch(struct mach_header_64 *hd, t_pinfo fpinfo, t_pinfo *pinfo, 
     // printf("%x\n", display);
   // fpinfo = get_parse_info((void *)hd);
   //mprintf("HALLO %s\n", (char *)&mhd->magic);
-  if (!fpinfo.get_uint32_t)
+  if (!fpinfo.get_uint32_t || (off_t)((void*)hd - pinfo->file_start) > pinfo->fsize)
     return ;
   // if (pinfo->fat_arch_from && (display & FAT_ARCH_ALL))
   // {
@@ -171,6 +172,7 @@ void handle_fat_arch(struct mach_header_64 *hd, t_pinfo fpinfo, t_pinfo *pinfo, 
   fpinfo.options = pinfo->options;
   fpinfo.print = pinfo->print;
   // fsize = size;
+  // printf("HFLUzefzefzefzef\n");
 
   if (fpinfo.arch != 32 && fpinfo.arch != 64)
       ;//printf("arch in file chelou magic %d\n", hd->magic);
@@ -181,9 +183,9 @@ void handle_fat_arch(struct mach_header_64 *hd, t_pinfo fpinfo, t_pinfo *pinfo, 
     {
 
       mcurfile = (void *)hd;
-       // printf("HFLUzefzefzefzef\n");
       // printf("%d %d\n", fpinfo.endian, fpinfo.arch);
       handle_macho_file(&mcurfile, &fpinfo, 0);
+
       // update_fat_symtab(pinfo, &fpinfo);
     }
     else if (fpinfo.file_type == ARCHIVE_FILE)
@@ -251,19 +253,27 @@ int check_fat_file(void *mfile, t_pinfo *pinfo)
       ft_fdprintf(2, "%s malformed fat file (fat header architecture: %u's cputype does not match object file's mach header)\n", pinfo->file_name, i);
       //return (0);
     }
+    // if (hd->magic != MH_MAGIC ||)
     fpinfo.fsize = pinfo->get_uint32_t((fat_arch + i)->size);
     fpinfo.file_name = pinfo->file_name;
     fpinfo.options = pinfo->options;
     fpinfo.fat_arch_from = pinfo->file_name;
-    // printf("bjr\n");
+    fpinfo.cputype = pinfo->get_uint32_t((fat_arch + i)->cputype);
+    fpinfo.cpusubtype = pinfo->get_uint32_t((fat_arch + i)->cpusubtype);
+    // printf("%x %d\n", hd->magic, fpinfo.file_type);
     if (fpinfo.file_type == MH_FILE && !check_macho_file(hd, &fpinfo))
     {
       // printf("HAAAAA\n");
       return (0);
 
     }
-    else if (fpinfo.file_type == ARCHIVE_FILE && !check_archive_file(hd, &fpinfo))
+    else if (fpinfo.file_type == ARCHIVE_FILE && (pinfo->ar_from || !check_archive_file(hd, &fpinfo)))
       return (0);
+    // else
+    // {
+    //   // ft_fdprintf(2, "bad magic number\n");
+    //   return (-1);
+    // }
     i++;
   }
   return (1);
@@ -292,7 +302,7 @@ void  handle_fat_file(void **mfile, t_pinfo *pinfo, uint32_t display)
 
   //exit(0);
 
-  // printf("OUPS\n");
+   // printf("OUPS\n");
   if (pinfo->bin == BIN_NM && !check_fat_file(*mfile, pinfo))
   {
       return ;
@@ -300,29 +310,50 @@ void  handle_fat_file(void **mfile, t_pinfo *pinfo, uint32_t display)
   i = 0;
   fat_archs_rev = NULL;
   fat_hd = *(struct fat_header **)(mfile);
-//m  printf("%x\n", fat_hd->magic);
-  if (!(flags & OPT_ARCH) && (fat_arch = get_best_fat_arch(pinfo, fat_hd, (struct fat_arch *)(*mfile + sizeof(struct fat_header)), &fat_archs_rev)))
+  if (fat_hd->magic != FAT_MAGIC && fat_hd->magic != FAT_CIGAM)
   {
-    // printf("zzzzzzzzzz\n");m
-    // fat_arch_info = NXGetArchInfoFromCpuType(fat_arch->cputype), fat_arch->cpusubtype));
-    fpinfo = get_parse_info((struct mach_header_64 *)(*mfile + fat_arch->offset), pinfo->bin);
-    fpinfo.print = pinfo->print;
-    // pinfo->fat_arch_from = NULL;
-    //
-    // fat_arch_info = NXGetArchInfoFromCpuType(fat_arch->cputype, fat_arch->cpusubtype);
-    //
-    // if (!ft_strncmp(fat_arch_info->description, "Intel family", 12) || !ft_strncmp(fat_arch_info->description, "PowerPC cpusubtype", 18))
-    //   ft_getf(&pinfo->fat_arch_from, "cputype (%u) cpusubtype (%u)\n", fat_arch_info->cputype, fat_arch_info->cpusubtype);
-    // else
-    //   pinfo->fat_arch_from = (char *)fat_arch_info->name;
-    // fpinfo.fat_arch_from = pinfo->fat_arch_from;
+    if (pinfo->bin == BIN_OTOOL)
+      printf("%s: is not an object file\n", pinfo->file_name);
+    return ;
+  }
+// printf("%x\n", fat_hd->magic);
+  if (!(flags & OPT_ARCH) && (fat_arch = get_best_fat_arch(pinfo, fat_hd, (struct fat_arch *)(*mfile + sizeof(struct fat_header)), &fat_archs_rev)) && fat_arch->offset < pinfo->fsize)
+  {
+    // printf("zzzzzzzzzz\n");
+    fat_arch_info = NXGetArchInfoFromCpuType(fat_arch->cputype, fat_arch->cpusubtype);
+    if (fat_arch->offset + fat_arch->size > pinfo->fsize)
+      ft_fdprintf(2, "fat file: %s offset to architecture %s extends past end of file\n", pinfo->file_name, fat_arch_info->name);
+    // printf("%u %u %llu\n", fat_arch->size, fat_arch->offset, pinfo->fsize);
+    if (fat_arch->offset < pinfo->fsize)
+    {
+      fpinfo = get_parse_info((struct mach_header_64 *)(*mfile + fat_arch->offset), pinfo->bin);
+      fpinfo.cputype = fat_arch->cputype;
+      fpinfo.cpusubtype = fat_arch->cpusubtype;
+      fpinfo.print = pinfo->print;
+      // pinfo->fat_arch_from = NULL;
+      //
+      // fat_arch_info = NXGetArchInfoFromCpuType(fat_arch->cputype, fat_arch->cpusubtype);
+      //
+      // if (!ft_strncmp(fat_arch_info->description, "Intel family", 12) || !ft_strncmp(fat_arch_info->description, "PowerPC cpusubtype", 18))
+      //   ft_getf(&pinfo->fat_arch_from, "cputype (%u) cpusubtype (%u)\n", fat_arch_info->cputype, fat_arch_info->cpusubtype);
+      // else
+      //   pinfo->fat_arch_from = (char *)fat_arch_info->name;
+      // fpinfo.fat_arch_from = pinfo->fat_arch_from;
 
-    fpinfo.fsize = fat_arch->size;
-    if ((fpinfo.file_type == ARCHIVE_FILE || ( fpinfo.file_type == MH_FILE && fpinfo.get_uint32_t( ((struct mach_header_64 *)(*mfile + fat_arch->offset))->cputype ) == (uint32_t)fat_arch->cputype)))
-      handle_fat_arch((struct mach_header_64 *)(*mfile + fat_arch->offset), fpinfo, pinfo, (display | FAT_ARCH_SPEC));
-    else
-      ft_fdprintf(2, "%s malformed fat file (fat header architecture: %u's cputype does not match object file's mach header)\n", pinfo->file_name, i);
+      fpinfo.fsize = fat_arch->size;
+      if (fat_arch->offset + fpinfo.fsize > pinfo->fsize)
+        fpinfo.fsize = pinfo->fsize - fat_arch->offset;
 
+      // printf
+      if ((fpinfo.file_type == ARCHIVE_FILE || ( fpinfo.file_type == MH_FILE && fpinfo.get_uint32_t( ((struct mach_header_64 *)(*mfile + fat_arch->offset))->cputype ) == (uint32_t)fat_arch->cputype)))
+        handle_fat_arch((struct mach_header_64 *)(*mfile + fat_arch->offset), fpinfo, pinfo, (display | FAT_ARCH_SPEC));
+      else if (pinfo->bin == BIN_NM)
+        ft_fdprintf(2, "%s malformed fat file (fat header architecture: %u's cputype does not match object file's mach header)\n", pinfo->file_name, i);
+      else
+        printf("%s: is not an object file\n", pinfo->file_name);
+      // else
+      //   ft_fdprintf(2, "%s malformed fat file (fat header architecture: %u's cputype does not match object file's mach header)\n", pinfo->file_name, i);
+    }
   }
   else if (!(flags & OPT_ARCH) || !ft_strcmp(((t_nm_options *)pinfo->options)->arch_flags[0], "all"))
   {
@@ -335,23 +366,40 @@ void  handle_fat_file(void **mfile, t_pinfo *pinfo, uint32_t display)
       // printf("mqdqzd\n");
       if ((fat_arch_info = NXGetArchInfoFromCpuType(pinfo->get_uint32_t((fat_arch + i)->cputype), pinfo->get_uint32_t((fat_arch + i)->cpusubtype))))
       {
-        fpinfo = get_parse_info((struct mach_header_64 *)(*mfile + pinfo->get_uint32_t((fat_arch + i)->offset)), pinfo->bin);
-        fpinfo.print = pinfo->print;
-       // printf("%d %d %s \n", pinfo->get_uint32_t((fat_arch + i)->cpusubtype), fat_arch_info->cpusubtype, fat_arch_info->description);
-        pinfo->fat_arch_from = NULL;
-        if (!ft_strncmp(fat_arch_info->description, "Intel family", 12) || !ft_strncmp(fat_arch_info->description, "PowerPC cpusubtype", 18))
-          ft_getf(&pinfo->fat_arch_from, "cputype (%u) cpusubtype (%u)", fat_arch_info->cputype, fat_arch_info->cpusubtype);
-        else
-          pinfo->fat_arch_from = (char *)fat_arch_info->name;
-        fpinfo.fat_arch_from = pinfo->fat_arch_from;
-        // printf("%s\n", fpinfo.fat_arch_from);
-        fpinfo.fsize = pinfo->get_uint32_t((fat_arch + i)->size);
-        if ((fpinfo.file_type == ARCHIVE_FILE || ( fpinfo.file_type == MH_FILE && fpinfo.get_uint32_t( ((struct mach_header_64 *)(*mfile + pinfo->get_uint32_t((fat_arch + i)->offset)))->cputype ) == pinfo->get_uint32_t((fat_arch + i)->cputype))))
-          handle_fat_arch((struct mach_header_64 *)(*mfile + pinfo->get_uint32_t((fat_arch + i)->offset)), fpinfo, pinfo, (display | FAT_ARCH_ALL));
-        else
-          ft_fdprintf(2, "%s malformed fat file (fat header architecture: %u's cputype does not match object file's mach header)\n", pinfo->file_name, i);
+        // printf("%x + %x = %x == %llx? \n", pinfo->get_uint32_t((fat_arch + i)->offset), pinfo->get_uint32_t((fat_arch + i)->size), pinfo->get_uint32_t((fat_arch + i)->offset) + pinfo->get_uint32_t((fat_arch + i)->size), pinfo->fsize);
+        if (pinfo->get_uint32_t((fat_arch + i)->offset) + pinfo->get_uint32_t((fat_arch + i)->size) > pinfo->fsize)
+          ft_fdprintf(2, "fat file: %s offset to architecture %s extends past end of file\n", pinfo->file_name, fat_arch_info->name);
+        if (pinfo->get_uint32_t((fat_arch + i)->offset) < pinfo->fsize)
+        // else
+        {
+          fpinfo = get_parse_info((struct mach_header_64 *)(*mfile + pinfo->get_uint32_t((fat_arch + i)->offset)), pinfo->bin);
+          fpinfo.print = pinfo->print;
+          fpinfo.cputype = pinfo->get_uint32_t((fat_arch + i)->cputype);
+          fpinfo.cpusubtype = pinfo->get_uint32_t((fat_arch + i)->cpusubtype);
+          // printf("%x %x\n", fpinfo.cputype, fpinfo.cpusubtype);
+         // printf("%d %d %s \n", pinfo->get_uint32_t((fat_arch + i)->cpusubtype), fat_arch_info->cpusubtype, fat_arch_info->description);
+          pinfo->fat_arch_from = NULL;
+          if (!ft_strncmp(fat_arch_info->description, "Intel family", 12) || !ft_strncmp(fat_arch_info->description, "PowerPC cpusubtype", 18))
+            ft_getf(&pinfo->fat_arch_from, "cputype (%u) cpusubtype (%u)", fat_arch_info->cputype, fat_arch_info->cpusubtype);
+          else
+            pinfo->fat_arch_from = (char *)fat_arch_info->name;
+          fpinfo.fat_arch_from = pinfo->fat_arch_from;
+          // printf("%s\n", fpinfo.fat_arch_from);
+          fpinfo.fsize = pinfo->get_uint32_t((fat_arch + i)->size);
 
+          if (pinfo->get_uint32_t((fat_arch + i)->offset) + fpinfo.fsize > pinfo->fsize)
+            fpinfo.fsize = pinfo->fsize - pinfo->get_uint32_t((fat_arch + i)->offset);
+
+          if ((fpinfo.file_type == ARCHIVE_FILE || ( fpinfo.file_type == MH_FILE && fpinfo.get_uint32_t( ((struct mach_header_64 *)(*mfile + pinfo->get_uint32_t((fat_arch + i)->offset)))->cputype ) == pinfo->get_uint32_t((fat_arch + i)->cputype))))
+            handle_fat_arch((struct mach_header_64 *)(*mfile + pinfo->get_uint32_t((fat_arch + i)->offset)), fpinfo, pinfo, (display | FAT_ARCH_ALL));
+          else if (pinfo->bin == BIN_NM)
+            ft_fdprintf(2, "%s malformed fat file (fat header architecture: %u's cputype does not match object file's mach header)\n", pinfo->file_name, i);
+          else
+            printf("%s (architecture %s): is not an object file\n", pinfo->file_name, fat_arch_info->name);
+        }
       }
+      else if (pinfo->bin == BIN_OTOOL)
+        printf("%s (architecture cputype (%u) cpusubtype (%u)): is not an object file\n", pinfo->file_name, pinfo->get_uint32_t((fat_arch + i)->cputype), pinfo->get_uint32_t((fat_arch + i)->cpusubtype));
       i++;
     }
   }
@@ -374,14 +422,19 @@ void  handle_fat_file(void **mfile, t_pinfo *pinfo, uint32_t display)
           pinfo->fat_arch_from = (char *)fat_arch_info->name;
         // printf("%s %x\n", arch_flags[1], display);
 
+        fpinfo.cputype = pinfo->get_uint32_t(fat_arch->cputype);
+        fpinfo.cpusubtype = pinfo->get_uint32_t(fat_arch->cpusubtype);
         fpinfo = get_parse_info((struct mach_header_64 *)(*mfile + pinfo->get_uint32_t(fat_arch->offset)), pinfo->bin);
         fpinfo.print = pinfo->print;
         fpinfo.fat_arch_from = arch_flags[1] ? pinfo->fat_arch_from : NULL;
         fpinfo.fsize = pinfo->get_uint32_t(fat_arch->size);
+
+        if (pinfo->get_uint32_t(fat_arch->offset) + fpinfo.fsize > pinfo->fsize)
+          fpinfo.fsize = pinfo->fsize - pinfo->get_uint32_t(fat_arch->offset);
         if ((fpinfo.file_type == ARCHIVE_FILE || ( fpinfo.file_type == MH_FILE && fpinfo.get_uint32_t( ((struct mach_header_64 *)(*mfile + pinfo->get_uint32_t(fat_arch->offset)))->cputype ) == pinfo->get_uint32_t(fat_arch->cputype))))
           handle_fat_arch((struct mach_header_64 *)(*mfile + pinfo->get_uint32_t(fat_arch->offset)), fpinfo, pinfo, arch_flags[1] ? (display | FAT_ARCH_ALL) : (display | FAT_ARCH_SPEC));
         else
-          ft_fdprintf(2, "%s malformed fat file (fat header architecture: %u's cputype does not match object file's mach header)\n", pinfo->file_name, i);
+          ft_fdprintf(2, "%s mamlformed fat file (fat header architecture: %u's cputype does not match object file's mach header)\n", pinfo->file_name, i);
 
 
       }

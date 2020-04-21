@@ -3,7 +3,11 @@
 int get_sect_names(char segname[16], char sectname[16], t_pinfo *pinfo, uint8_t n_sect)
 {
   if (n_sect == 0 || n_sect > pinfo->secid)
+  {
+    // printf("azdazd\n");
     return (0);
+
+  }
   if (pinfo->arch == 32)
   {
     ft_memcpy(sectname, ((struct section *)(pinfo->sectab + n_sect - 1)->secaddr)->sectname, 16);
@@ -14,6 +18,7 @@ int get_sect_names(char segname[16], char sectname[16], t_pinfo *pinfo, uint8_t 
     ft_memcpy(sectname, ((struct section_64 *)(pinfo->sectab + n_sect - 1)->secaddr)->sectname, 16);
     ft_memcpy(segname, ((struct section_64 *)(pinfo->sectab + n_sect - 1)->secaddr)->segname, 16);
   }
+  // printf("zd\n");
   return (1);
 }
 

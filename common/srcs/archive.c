@@ -111,21 +111,21 @@ int   check_archive_file(void *mfile, t_pinfo *pinfo)
 char  *get_ar_name(struct ar_hdr *ar_hd, uint32_t *extended)
 {
   uint32_t  i;
-  uint32_t ext;
+  // uint32_t ext;
 
 
-  if ((ext = ft_strncmp(ar_hd->ar_name, AR_EFMT1, ft_strlen(AR_EFMT1)) ? 0 : 1))
+  if ((*extended = ft_strncmp(ar_hd->ar_name, AR_EFMT1, ft_strlen(AR_EFMT1)) ? 0 : 1))
   {
-    if (*extended == (uint32_t)-1)
-      *extended = ext;
+    // if (*extended == (uint32_t)-1)
+    //   *extended = ext;
     return (ft_strndup((char *)(ar_hd + 1), ft_atoll(ar_hd->ar_name + ft_strlen(AR_EFMT1))));
   }
-  if (*extended == (uint32_t)-1)
-    *extended = 0;
-  i = 0;
-  while (ar_hd->ar_name[i] != ' ' && i < sizeof(ar_hd->ar_name))
-    ++i;
-  return (ft_strtrim(ft_strndup(ar_hd->ar_name, sizeof(ar_hd->ar_name))));
+  // if (*extended == (uint32_t)-1)
+  //   *extended = 0;
+  i = sizeof(ar_hd->ar_name) - 1;
+  while (ar_hd->ar_name[i] == ' ' && i > 0)
+    --i;
+  return (ft_strndup(ar_hd->ar_name, i + 1));
 }
 
 void  handle_archive_file(void **mfile, t_pinfo *pinfo)
@@ -136,7 +136,9 @@ void  handle_archive_file(void **mfile, t_pinfo *pinfo)
   t_pinfo       fpinfo;
   uint32_t      extended;
   char          *name;
+  uint32_t      first;
 
+  first = 1;
 
   if (pinfo->bin == BIN_NM && !check_archive_file(*mfile, pinfo))
    return ;
@@ -170,21 +172,29 @@ void  handle_archive_file(void **mfile, t_pinfo *pinfo)
       // {
       //   ar_hd = ar_hd = (struct ar_hdr *)((void *)ar_hd + );
       // }
-    //  printf("%s\n", name);
 
       hd = (struct mach_header_64 *)((void *)ar_hd + sizeof(struct ar_hdr) + (extended ? ft_atoll(ar_hd->ar_name + ft_strlen(AR_EFMT1)) : 0));
-      fpinfo = get_parse_info((void *)hd, pinfo->bin);
+      // printf("%s az\n", name);
+      if ((off_t)((void *)hd - pinfo->file_start) < pinfo->fsize)
+        fpinfo = get_parse_info((void *)hd, pinfo->bin);
+      else
+      {
+        fpinfo.arch = 0;
+      }
       fpinfo.print = pinfo->print;
       fpinfo.fsize = ft_atoll(ar_hd->ar_size);
       fpinfo.file_name = pinfo->file_name;
       fpinfo.options = pinfo->options;
       fpinfo.ar_from = name;
       fpinfo.fat_arch_from = pinfo->fat_arch_from;
+
+      // printf("%x %x\n", fpinfo.cputype, fpinfo.cpusubtype);
       // fsize = fpinfo.fsize;
       if (fpinfo.arch != 32 && fpinfo.arch != 64)
       {
         if (pinfo->bin == BIN_OTOOL)
           printf("%s(%s): is not an object file\n", pinfo->file_name, name);
+
       }
       else
       {
@@ -201,19 +211,67 @@ void  handle_archive_file(void **mfile, t_pinfo *pinfo)
           }
           mcurfile = (void *)hd;
 
-          //; printf("HFLUzefzefzefzef\n");
+         // printf("%x %llx\n", (unsigned int )((void *)hd - pinfo->file_start), pinfo->fsize);
           // printf("%d %d\n", fpinfo.endian, fpinfo.arch);
           handle_macho_file(&mcurfile, &fpinfo, 0);
+
+          first = 0;
           // update_fat_symtab(pinfo, &fpinfo);
         }
+        else if (fpinfo.file_type == FAT_FILE && pinfo->bin == BIN_OTOOL)
+        {
+          // printf("AH\n");
+           if (check_fat_file((void *)hd, &fpinfo))
+             printf("%s(%s): is not an object file\n", pinfo->file_name, name);
+           else
+           {
+             // if (first)
+             // {
+             //   ft_fdprintf(2, "%s(%s): is not an object file\ncontains no members\n", pinfo->file_name, name);
+             //   return ;
+             // }
+             // else
+              ft_fdprintf(2, "%s(%s): is not an object file\n", pinfo->file_name, name);
+            }
+
+          // if (!check)
+          //   ft_fdprintf(2, "BAD MAGIC NUMBER LOL\n");
+          // void  handle_fat_file(void **mfile, t_pinfo *pinfo, uint32_t display);
+        }
         else if (pinfo->bin == BIN_OTOOL)
-          printf("%s(%s): is not an object file\n", pinfo->file_name, name);
+        {
+          // if (first)
+          // {
+          //   ft_fdprintf(2, "%s(%s): is not an object file\ncontains no members", pinfo->file_name, name);
+          //   return ;
+          // }
+          // else
+            printf("%s(%s): is not an object file\n", pinfo->file_name, name);
+        }
       }
 
     }
-    ar_hd = (struct ar_hdr *)((void *)ar_hd + ft_atoll(ar_hd->ar_size) + sizeof(struct ar_hdr));
+    // printf("%llu %llu\n", ft_atoll(ar_hd->ar_size), pinfo->fsize);
+    if ((unsigned long long)ft_atoll(ar_hd->ar_size) > (unsigned long long)pinfo->fsize)
+    {
+      ft_fdprintf(2, "%s: archive: %s offset to next member extends past the end of the file\n", "PROG_NAME", pinfo->file_name);
+      free(name);
+      break ;
+
+    }
+    // printf("+ %llu => %llu\n", ft_atoll(ar_hd->ar_size), (unsigned long long)((void *)ar_hd + ft_atoll(ar_hd->ar_size) + sizeof(struct ar_hdr) + (ft_atoll(ar_hd->ar_size) + sizeof(struct ar_hdr)) % sizeof(uint16_t)));
+    ar_hd = (struct ar_hdr *)((void *)ar_hd + ft_atoll(ar_hd->ar_size) + sizeof(struct ar_hdr) + (ft_atoll(ar_hd->ar_size) + sizeof(struct ar_hdr)) % sizeof(uint16_t));
+    if ((off_t)((void *)ar_hd - pinfo->file_start) > pinfo->fsize)
+      ft_fdprintf(2, "%s: archive: %s offset to next member extends past the end of the file\n", "PROG_NAME", pinfo->file_name);
+
     free(name);
   }
+  if (first && BIN_OTOOL)
+  {
+    // ft_fdprintf(2, "error: %s: archive: %s contains no members\n", "PROG_NAME", pinfo->file_name);
+    // return ;
+  }
+  // else
   //handle_macho_file(&mcurfile, (void *)hd, &fpinfo, options);
 //   (void)mfile;
 //   (void)pinfo;

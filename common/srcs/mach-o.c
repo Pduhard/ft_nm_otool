@@ -196,7 +196,12 @@ int   check_macho_file(void *mfile, t_pinfo *pinfo)
 void  handle_macho_file(void **mfile, t_pinfo *pinfo, uint32_t display)
 {
   struct load_command *load_c;
+  struct load_command *lc_start;
+
   uint32_t            ncmds;
+  uint32_t            i;
+
+  i = 0;
   // void                *filestart;
 
   if (pinfo->bin == BIN_NM && !check_macho_file(*mfile, pinfo))
@@ -206,11 +211,21 @@ void  handle_macho_file(void **mfile, t_pinfo *pinfo, uint32_t display)
   // printf("%lld\n", pinfo->fsize);
   //mprintf("avant loadc\n");
   load_c = (struct load_command *)(*mfile + (pinfo->arch == 64 ? sizeof(struct mach_header_64) : sizeof(struct mach_header)));
-  while (ncmds--)
+  lc_start = load_c;
+  pinfo->loadc = lc_start;
+  // printf("%x\n", pinfo->get_uint32_t((*(struct mach_header **)(mfile))->sizeofcmds));
+  while (i < ncmds)
   {
-//    printf("load_command id %x cmd size %u\n", load_c->cmd, load_c->cmdsize);
-    handle_load_command(load_c, pinfo, *mfile);
+    // printf("load_command id %x cmd size %u\n", load_c->cmd, pinfo->get_uint32_t(load_c->cmdsize));
+    // if (pinfo->bin == BIN_OTOOL && pinfo->get_uint32_t(load_c->cmdsize) % sizeof(int32_t))
+    //   printf("load command %u size not a multiple of sizeof(int32_t)\nload command %u extends past end of load commands\n", i, i);
+    // if (pinfo->bin == BIN_OTOOL && (void *)load_c + pinfo->get_uint32_t(load_c->cmdsize) > (void *)lc_start
+    //   + (pinfo->arch == 64 ? pinfo->get_uint32_t((*(struct mach_header_64 **)(mfile))->sizeofcmds) : pinfo->get_uint32_t((*(struct mach_header **)(mfile))->sizeofcmds) ))
+      // printf("load command %u extends past end of load commands\n", i);
+    if (!handle_load_command(load_c, pinfo, *mfile))
+      break ;
     load_c = (void *)load_c + pinfo->get_uint32_t(load_c->cmdsize);
+    i++;
   }
   // if (pinfo->bin == BIN_NM)
   // {

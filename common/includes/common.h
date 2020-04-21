@@ -131,9 +131,12 @@ typedef struct s_pinfo
   char        *fat_arch_from;
   int         section_start;
   void        *file_start;
+  cpu_type_t  cputype;
+  cpu_subtype_t cpusubtype;
+  struct load_command * loadc;
 }             t_pinfo;
 
-void *mapp_file(char *file_name, char *bin_name, off_t *file_size);
+void *mapp_file(char *file_name, char *bin_name, off_t *file_size, e_bin bin);
 
 /*  conversions functions */
 
@@ -163,9 +166,10 @@ int  check_lc_segment(struct load_command *load_command, t_pinfo *pinfo, uint32_
 int  check_lc_segment_64(struct load_command *load_command, t_pinfo *pinfo, uint32_t load_cmd_id);
 int  check_macho_file(void *mfile, t_pinfo *pinfo);
 int  check_archive_file(void *mfile, t_pinfo *pinfo);
+int check_fat_file(void *mfile, t_pinfo *pinfo);
 
 /*  command handle functions  */
-void handle_load_command(struct load_command *load_command, t_pinfo *pinfo, void *filestart);
+int handle_load_command(struct load_command *load_command, t_pinfo *pinfo, void *filestart);
 
 void handle_lc_segment_64(void *addr, t_pinfo *pinfo);
 void handle_lc_segment(void *addr, t_pinfo *pinfo);
@@ -187,6 +191,7 @@ void  assign_symbol(t_pinfo *pinfo);
 
 /*        */
 
+uint32_t  get_number_load_command(void *mfile, t_pinfo *pinfo);
 
 /*  error functions */
 
