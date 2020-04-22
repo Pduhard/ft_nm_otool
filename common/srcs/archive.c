@@ -12,16 +12,16 @@ int   check_archive_file(void *mfile, t_pinfo *pinfo)
   uint32_t      check;
   uint32_t      final_check;
   uint32_t      i;
-  t_nm_options  *options;
+  // t_nm_options  *options;
 
-  options = (t_nm_options *)pinfo->options;
+  // options = (t_nm_options *)pinfo->options;
 
   final_check = 0;
   i = 0;
-  while ((!i && !(options->flags & OPT_ARCH)) || ((options->flags & OPT_ARCH) && options->arch_flags[i]))
+  while ((!i && !(pinfo->options->flags & OPT_NM_ARCH)) || ((pinfo->options->flags & OPT_NM_ARCH) && pinfo->options->arch_flags[i]))
   {
-    check = (options->flags & OPT_ARCH) && !pinfo->fat_arch_from ? 0 : 1;
-    if (!check && !ft_strcmp(options->arch_flags[0], "all"))
+    check = (pinfo->options->flags & OPT_NM_ARCH) && !pinfo->fat_arch_from ? 0 : 1;
+    if (!check && !ft_strcmp(pinfo->options->arch_flags[0], "all"))
       check = 1;
     cputype = 0;
      // printf("M\n");
@@ -74,7 +74,7 @@ int   check_archive_file(void *mfile, t_pinfo *pinfo)
             cpusubtype = fpinfo.get_uint32_t(((struct mach_header *)hd)->cpusubtype);
           }
           if (!check)
-            check |= check_arch_in_file(cputype, cpusubtype, &fpinfo, options->arch_flags[i]);
+            check |= check_arch_in_file(cputype, cpusubtype, &fpinfo, pinfo->options->arch_flags[i]);
           else if ((uint32_t)cputype != fpinfo.get_uint32_t(((struct mach_header *)hd)->cputype))
             ft_fdprintf(2, "cputype (%d) does not match previous archive members cputype (%d) (all members must match)\n", fpinfo.get_uint32_t(((struct mach_header *)hd)->cputype), cputype);
         }
@@ -86,7 +86,7 @@ int   check_archive_file(void *mfile, t_pinfo *pinfo)
             cpusubtype = fpinfo.get_uint32_t(((struct mach_header_64 *)hd)->cpusubtype);
           }
           if (!check)
-            check |= check_arch_in_file(cputype, cpusubtype, &fpinfo, options->arch_flags[i]);
+            check |= check_arch_in_file(cputype, cpusubtype, &fpinfo, pinfo->options->arch_flags[i]);
           else if ((uint32_t)cputype != fpinfo.get_uint32_t(((struct mach_header_64 *)hd)->cputype))
             ft_fdprintf(2, "cputype (%d) does not match previous archive members cputype (%d) (all members must match)\n", fpinfo.get_uint32_t(((struct mach_header_64 *)hd)->cputype), cputype);
         }
@@ -99,7 +99,7 @@ int   check_archive_file(void *mfile, t_pinfo *pinfo)
     }
     final_check |= check;
     if (!check)
-      ft_fdprintf(2, "file: %s does not contain architecture %s\n", pinfo->file_name, options->arch_flags[i]);
+      ft_fdprintf(2, "file: %s does not contain architecture %s\n", pinfo->file_name, pinfo->options->arch_flags[i]);
     i++;
   }
   // if (!check)
@@ -202,11 +202,11 @@ void  handle_archive_file(void **mfile, t_pinfo *pinfo)
         {
           if (pinfo->bin == BIN_NM)
           {
-            if (!(((t_nm_options *)pinfo->options)->flags & OPT_O))
+            if (!(pinfo->options->flags & OPT_NM_O))
               printf("\n%s(%s)", pinfo->file_name, name);
-            if (pinfo->fat_arch_from && !(((t_nm_options *)pinfo->options)->flags & OPT_O))
+            if (pinfo->fat_arch_from && !(pinfo->options->flags & OPT_NM_O))
               printf(" (for architecture %s):\n", pinfo->fat_arch_from);
-            else if (!(((t_nm_options *)pinfo->options)->flags & OPT_O))
+            else if (!(pinfo->options->flags & OPT_NM_O))
               printf(":\n");
           }
           mcurfile = (void *)hd;
@@ -231,7 +231,9 @@ void  handle_archive_file(void **mfile, t_pinfo *pinfo)
              //   return ;
              // }
              // else
-              ft_fdprintf(2, "%s(%s): is not an object file\n", pinfo->file_name, name);
+              ft_fdprintf(2, "%s(%s): is not an object file\ncontains no members\n", pinfo->file_name, name);
+              return ;
+
             }
 
           // if (!check)

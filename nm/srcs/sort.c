@@ -86,13 +86,13 @@ void sort_symtab(t_pinfo *pinfo)
 {
   uint32_t  flags;
 
-  flags = ((t_nm_options *)pinfo->options)->flags;
+  flags = pinfo->options->flags;
   int   (*fct)(t_symtab *, t_symtab *);
 
-  if ((flags & OPT_N))
-    fct = (flags & OPT_R) ? &num_rcmp_symtab : &num_cmp_symtab;
+  if ((flags & OPT_NM_N))
+    fct = (flags & OPT_NM_R) ? &num_rcmp_symtab : &num_cmp_symtab;
   else
-    fct = (flags & OPT_R) ? &alph_rcmp_symtab : &alph_cmp_symtab;
+    fct = (flags & OPT_NM_R) ? &alph_rcmp_symtab : &alph_cmp_symtab;
   qsort(pinfo->symtab, pinfo->symid, sizeof(t_symtab), (int (*)(const void *, const void *))fct); // difference when name is identical ....
   //qsort_symtab(pinfo, 0, pinfo->symid, &alph_cmp_symtab);
   /*int j = pinfo->symid - 1;

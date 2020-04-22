@@ -14,7 +14,7 @@ int check_arch_in_file(cpu_type_t cputype, cpu_subtype_t cpusubtype, t_pinfo *pi
   if (pinfo->file_type == MH_FILE)
   {
     arch_info = NXGetArchInfoFromName(arch_name);
-    if (!((t_nm_options *)pinfo->options)->arch_flags[1])
+    if (!pinfo->options->arch_flags[1])
     {
      if (!(all_info = NXGetAllArchInfos()))
        return (0);
@@ -44,7 +44,7 @@ int check_arch_in_file(cpu_type_t cputype, cpu_subtype_t cpusubtype, t_pinfo *pi
 
 int       check_archs_in_file(void *mfile, t_pinfo *pinfo)
 {
-    t_nm_options *options;
+    // t_nm_options *options;
     uint32_t  i;
     int       check;
     int       ar_check;
@@ -52,13 +52,13 @@ int       check_archs_in_file(void *mfile, t_pinfo *pinfo)
     // printf("???????\n");/
     check = 0;
     i = 0;
-    options = (t_nm_options *)pinfo->options;
-    if (!(options->flags & OPT_ARCH) || !ft_strcmp(options->arch_flags[0], "all"))
+    // options = pinfo->options;
+    if (!(pinfo->options->flags & OPT_NM_ARCH) || !ft_strcmp(pinfo->options->arch_flags[0], "all"))
       return (1);
-    while (options->arch_flags[i])
+    while (pinfo->options->arch_flags[i])
     {
-      if (!(ar_check = check_arch_in_file(pinfo->get_uint32_t(*((uint32_t *)(mfile + sizeof(uint32_t)))), pinfo->get_uint32_t(*((uint32_t *)(mfile + sizeof(uint32_t) * 2))), pinfo, options->arch_flags[i])))
-        ft_fdprintf(2, "file: %s does not contain architecture: %s\n", pinfo->file_name, options->arch_flags[i]);
+      if (!(ar_check = check_arch_in_file(pinfo->get_uint32_t(*((uint32_t *)(mfile + sizeof(uint32_t)))), pinfo->get_uint32_t(*((uint32_t *)(mfile + sizeof(uint32_t) * 2))), pinfo, pinfo->options->arch_flags[i])))
+        ft_fdprintf(2, "file: %s does not contain architecture: %s\n", pinfo->file_name, pinfo->options->arch_flags[i]);
       check |= ar_check;
       // else if (pinfo->file_type == ARCHIVE_FILE)
         // check = 1;
@@ -233,11 +233,11 @@ void  handle_macho_file(void **mfile, t_pinfo *pinfo, uint32_t display)
     pinfo->print(pinfo, display);
   //   if (!(pinfo->symtab))
   //     ft_fdprintf(2, "warning: %s: no name list\n", pinfo->file_name);
-  //   else if (display == DISPLAY_INFO_ON && !(((t_nm_options *)pinfo->options)->flags & OPT_O))
+  //   else if (display == DISPLAY_INFO_ON && !(((t_nm_options *)pinfo->options)->flags & OPT_NM_O))
   //     printf("\n%s:\n", pinfo->file_name);
   //
   // //  printf("sort avant\n");
-  //   if ((((t_nm_options *)pinfo->options)->flags & OPT_L) && (((t_nm_options *)pinfo->options)->flags & OPT_S) && !pinfo->section_start)
+  //   if ((((t_nm_options *)pinfo->options)->flags & OPT_NM_L) && (((t_nm_options *)pinfo->options)->flags & OPT_NM_S) && !pinfo->section_start)
   //   {
   //     create_section_start(pinfo);
   //     // t_symtab *new_tab;
@@ -256,7 +256,7 @@ void  handle_macho_file(void **mfile, t_pinfo *pinfo, uint32_t display)
   //     //   pinfo->symtab = new_tab;
   //     // }
   //   }
-  //   if (!(((t_nm_options *)pinfo->options)->flags & OPT_P))
+  //   if (!(((t_nm_options *)pinfo->options)->flags & OPT_NM_P))
   //     sort_symtab(pinfo);
   //   //printf("sort apresm\n");
   //   assign_symbol(pinfo);

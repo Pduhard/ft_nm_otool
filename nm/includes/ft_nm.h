@@ -19,40 +19,40 @@
 # define NM_USAGE "[-agnopruUmxjlfAP[s segname sectname] [-] [-t format] [[-arch <arch_flag>] ...] [file ...]"
 /*    OPTIONS define  */
 
-# define VALID_FLAGS  "agnopruUmxjlfAPs"
-# define OPT_ERROR    0
-# define OPT_A        0b1
-# define OPT_G        0b10
-# define OPT_N        0b100
-# define OPT_O        0b1000
-# define OPT_P        0b10000
-# define OPT_R        0b100000
-# define OPT_U        0b1000000
-# define OPT_MAJ_U    0b10000000
-# define OPT_M        0b100000000
-# define OPT_X        0b1000000000
-# define OPT_J        0b10000000000
-# define OPT_L        0b100000000000
-# define OPT_F        0b1000000000000
-# define OPT_MAJ_A    0b10000000000000
-# define OPT_MAJ_P    0b100000000000000
-# define OPT_S        0b1000000000000000
-
-# define OPT_T        0b10000000000000000
-# define OPT_ARCH     0b100000000000000000
-
-# define OPT_END      0b1000000000000000000
-
-# define DISPLAY_INFO_ON 1
-# define DISPLAY_INFO_OFF 2
-
-# define FAT_ARCH_ALL 4
-# define FAT_ARCH_SPEC 8
+// # define VALID_FLAGS  "agnopruUmxjlfAPs"
+// # define OPT_ERROR    0
+// # define OPT_A        0b1
+// # define OPT_G        0b10
+// # define OPT_N        0b100
+// # define OPT_O        0b1000
+// # define OPT_P        0b10000
+// # define OPT_R        0b100000
+// # define OPT_U        0b1000000
+// # define OPT_MAJ_U    0b10000000
+// # define OPT_M        0b100000000
+// # define OPT_X        0b1000000000
+// # define OPT_J        0b10000000000
+// # define OPT_L        0b100000000000
+// # define OPT_F        0b1000000000000
+// # define OPT_MAJ_A    0b10000000000000
+// # define OPT_MAJ_P    0b100000000000000
+// # define OPT_S        0b1000000000000000
+//
+// # define OPT_T        0b10000000000000000
+// # define OPT_ARCH     0b100000000000000000
+//
+// # define OPT_END      0b1000000000000000000
+//
+// # define DISPLAY_INFO_ON 1
+// # define DISPLAY_INFO_OFF 2
+//
+// # define FAT_ARCH_ALL 4
+// # define FAT_ARCH_SPEC 8
 
 /*                  */
 
-# define ARCH_32  32
-# define ARCH_64  64
+// # define ARCH_32  32
+// # define ARCH_64  64
 // # define BIG_ENDIAN 0
 // # define LITTLE_ENDIAN 1
 

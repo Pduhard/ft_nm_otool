@@ -5,6 +5,15 @@
 //
 // }
 //
+void    ft_throw_error(char *message, ...)
+{
+  va_list	ap;
+
+  va_start(ap, message);
+  ft_fdvprintf(2, message , ap);
+  va_end(ap);
+}
+
 int     ft_return_error(int ret, char *message, ...)
 {
   va_list	ap;

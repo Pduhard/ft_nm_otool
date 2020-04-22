@@ -26,12 +26,10 @@ int check_section_selected(t_pinfo *pinfo, uint8_t n_sect, uint8_t n_type)
 {
   char  sectname[16];
   char  segname[16];
-  t_nm_options  *options;
 
-  options = (t_nm_options *)pinfo->options;
   if ((n_type & N_TYPE) != N_SECT || !get_sect_names(segname, sectname, pinfo, n_sect))
     return (0);
-  if (!ft_strcmp(options->segname, segname) && !ft_strcmp(options->sectname, sectname))
+  if (!ft_strcmp(pinfo->options->segname, segname) && !ft_strcmp(pinfo->options->sectname, sectname))
     return (1);
   return (0);
 }
@@ -129,7 +127,7 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
   uint32_t              flags;
 
   // printf("%c\n", get_symbol(0, 0, 0, NULL));
-  flags = ((t_nm_options *)pinfo->options)->flags;
+  flags = pinfo->options->flags;
   // struct section_64     *section;
 
   //printf("%zu, %zu\n", sizeof(int), sizeof(unsigned long));
@@ -165,7 +163,7 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
       nlist.n_type = ((struct nlist *)(symtab))->n_type;
       nlist.n_sect = ((struct nlist *)(symtab))->n_sect;
       symbol = get_symbol(nlist.n_type, nlist.n_sect, nlist.n_value, pinfo);
-      if ((flags & OPT_L) && (flags & OPT_S) && check_section_selected(pinfo, nlist.n_sect, nlist.n_type))
+      if ((flags & OPT_NM_L) && (flags & OPT_NM_S) && check_section_selected(pinfo, nlist.n_sect, nlist.n_type))
       {
         if ((nlist.n_type & N_TYPE) == N_SECT)
         {
@@ -173,11 +171,11 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
             pinfo->section_start = 1;
         }
       }
-      if ((symbol != '-' || ((flags & OPT_A) && !(flags & OPT_G)))
-        && ((nlist.n_type & N_EXT) || !(flags & OPT_G))
-          && (!(flags & OPT_U) || (symbol == 'U' && !(nlist.n_type & ~(N_TYPE | N_EXT))))
-            && (!(flags & OPT_MAJ_U) || symbol != 'U' || (nlist.n_type & ~(N_TYPE | N_EXT)))
-              && (!(flags & OPT_S) || check_section_selected(pinfo, nlist.n_sect, nlist.n_type)))
+      if ((symbol != '-' || ((flags & OPT_NM_A) && !(flags & OPT_NM_G)))
+        && ((nlist.n_type & N_EXT) || !(flags & OPT_NM_G))
+          && (!(flags & OPT_NM_U) || (symbol == 'U' && !(nlist.n_type & ~(N_TYPE | N_EXT))))
+            && (!(flags & OPT_NM_MAJ_U) || symbol != 'U' || (nlist.n_type & ~(N_TYPE | N_EXT)))
+              && (!(flags & OPT_NM_S) || check_section_selected(pinfo, nlist.n_sect, nlist.n_type)))
       {
         if (symbol == 'I' || symbol == 'i')
         {
@@ -215,7 +213,7 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
       nlist.n_value = pinfo->get_uint64_t(nlist.n_value);
       nlist.n_desc = pinfo->get_uint16_t(nlist.n_desc);
       symbol = get_symbol(nlist.n_type, nlist.n_sect, nlist.n_value , pinfo);
-      if ((flags & OPT_L) && (flags & OPT_S) && check_section_selected(pinfo, nlist.n_sect, nlist.n_type))
+      if ((flags & OPT_NM_L) && (flags & OPT_NM_S) && check_section_selected(pinfo, nlist.n_sect, nlist.n_type))
       {
         if ((nlist.n_type & N_TYPE) == N_SECT)
         {
@@ -223,11 +221,11 @@ void handle_lc_symtab(void *addr, t_pinfo *pinfo, void *filestart)
             pinfo->section_start = 1;
         }
       }
-      if ((symbol != '-' || ((flags & OPT_A) && !(flags & OPT_G)))
-        && ((nlist.n_type & N_EXT) || !(flags & OPT_G))
-          && (!(flags & OPT_U) || (symbol == 'U' && !(nlist.n_type & ~(N_TYPE | N_EXT))))
-            && (!(flags & OPT_MAJ_U) || symbol != 'U' || (nlist.n_type & ~(N_TYPE | N_EXT)))
-              && (!(flags & OPT_S) || check_section_selected(pinfo, nlist.n_sect, nlist.n_type)))
+      if ((symbol != '-' || ((flags & OPT_NM_A) && !(flags & OPT_NM_G)))
+        && ((nlist.n_type & N_EXT) || !(flags & OPT_NM_G))
+          && (!(flags & OPT_NM_U) || (symbol == 'U' && !(nlist.n_type & ~(N_TYPE | N_EXT))))
+            && (!(flags & OPT_NM_MAJ_U) || symbol != 'U' || (nlist.n_type & ~(N_TYPE | N_EXT)))
+              && (!(flags & OPT_NM_S) || check_section_selected(pinfo, nlist.n_sect, nlist.n_type)))
 
       {
         if (symbol == 'I' || symbol == 'i')

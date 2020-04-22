@@ -141,14 +141,14 @@ void  print_xval_symbol(t_pinfo *pinfo, t_symtab *symtab)
 void  portable_output_format(t_pinfo *pinfo, t_symtab *symtab)
 {
   // uint32_t flags;
-  t_nm_options *options;
+  t_option *options;
 
-  options = (t_nm_options *)pinfo->options;
+  options = (t_option *)pinfo->options;
 
   // flags = options->flags;
-  if ((options->flags & OPT_T) && options->format == F_OCT)
+  if ((options->flags & OPT_NM_T) && options->format == F_OCT)
     printf("%s %c %llo 0\n", symtab->name, symtab->symbol, symtab->sym.n_value);
-  else if ((options->flags & OPT_T) && options->format == F_DEC)
+  else if ((options->flags & OPT_NM_T) && options->format == F_DEC)
     printf("%s %c %lld 0\n", symtab->name, symtab->symbol, symtab->sym.n_value);
   else
     printf("%s %c %llx 0\n", symtab->name, symtab->symbol, symtab->sym.n_value);
@@ -157,11 +157,11 @@ void  portable_output_format(t_pinfo *pinfo, t_symtab *symtab)
 void  assign_symbol(t_pinfo *pinfo)
 {
   // t_symtab  *symtab;
-  t_nm_options *options;
+  t_option *options;
   uint32_t  i;
   char      *tmp;
 
-  options = (t_nm_options *)pinfo->options;
+  options = (t_option *)pinfo->options;
   // char      symbol;
   // uint64_t  n_value;
   // uint8_t   n_type;
@@ -177,25 +177,25 @@ void  assign_symbol(t_pinfo *pinfo)
       // n_sect = get_sym_n_sect(pinfo, i);
       // symbol = get_symbol(n_type, n_sect, n_value, pinfo);
       // printf("hallo %x %x %x\n", REFERENCE_TYPE, (uint32_t)(pinfo->symtab + i)->sym.n_desc & REFERENCE_TYPE, (uint32_t)(pinfo->symtab + i)->sym.n_desc & ~REFERENCE_TYPE);
-    //  if ((pinfo->symtab + i)->symbol != '-' || (options->flags & OPT_A))
+    //  if ((pinfo->symtab + i)->symbol != '-' || (options->flags & OPT_NM_A))
     //  {
        //  printf("%c\n", (pinfo->symtab + i)->symbol);
        // printf("%s\n", (pinfo->symtab + i)->name);
-        if (((options->flags & OPT_O) && !(options->flags & OPT_MAJ_P)) || (options->flags & OPT_MAJ_A))
+        if (((options->flags & OPT_NM_O) && !(options->flags & OPT_NM_MAJ_P)) || (options->flags & OPT_NM_MAJ_A))
         {
           if (pinfo->fat_arch_from)
-            printf((options->flags & OPT_MAJ_P) ? "(for architecture %s): " : "(for architecture %s):", pinfo->fat_arch_from);
+            printf((options->flags & OPT_NM_MAJ_P) ? "(for architecture %s): " : "(for architecture %s):", pinfo->fat_arch_from);
           printf("%s", pinfo->file_name);
           if (pinfo->ar_from)
-            printf((options->flags & OPT_MAJ_P) ? "[%s]: " : ":%s: ", pinfo->ar_from);
+            printf((options->flags & OPT_NM_MAJ_P) ? "[%s]: " : ":%s: ", pinfo->ar_from);
           else
             printf(": ");
         }
-        // if ((options->flags & OPT_M))
+        // if ((options->flags & OPT_NM_M))
         //   human_readable_print_symbol(pinfo, pinfo->symtab + i);
-        if ((options->flags & OPT_X))
+        if ((options->flags & OPT_NM_X))
           print_xval_symbol(pinfo, pinfo->symtab + i);
-        else if ((options->flags & OPT_MAJ_P))
+        else if ((options->flags & OPT_NM_MAJ_P))
           portable_output_format(pinfo, pinfo->symtab + i);
         else if ((pinfo->symtab + i)->symbol == '-')
         {
@@ -206,7 +206,7 @@ void  assign_symbol(t_pinfo *pinfo)
           if (tmp)
             free(tmp);
         }
-        else if ((options->flags & (OPT_U | OPT_J)))
+        else if ((options->flags & (OPT_NM_U | OPT_NM_J)))
           printf("%s\n", (pinfo->symtab + i)->name);
         else if ((pinfo->symtab + i)->symbol == 'I' || (pinfo->symtab + i)->symbol == 'i')
           printf(pinfo->arch == ARCH_32 ? "%8c %c %s (indirect for %s)\n" : "%16c %c %s (indirect for %s)\n", ' ', (pinfo->symtab + i)->symbol, (pinfo->symtab + i)->name, (pinfo->symtab + i)->indr);

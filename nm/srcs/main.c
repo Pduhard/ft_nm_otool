@@ -1,6 +1,6 @@
 #include "ft_nm.h"
-
-int       check_arch_flags(t_nm_options *opt)
+/*
+int       check_arch_flags(t_option *opt)
 {
   int all;
   int i;
@@ -72,30 +72,30 @@ uint32_t       update_format(e_format *format, char *new_format, char *prog_name
       return (ft_return_error(OPT_ERROR, "error: %s: invalid argument to option: -t %s\n", prog_name, new_format));
     return (OPT_T);
 }
-
-uint32_t  check_nm_flag(char **argv, uint32_t *i, void *opt_struct)
+*/
+uint32_t  check_nm_flag(char **argv, uint32_t *i, t_option *options)
 {
-    t_nm_options  *options;
+    // t_option  *options;
     char          *flag_str;
     int           flag_i;
     uint32_t      opt_flag;
 
     flag_str = &(argv[*i][1]);
-    options = (t_nm_options *)opt_struct;
+    // options = (t_option *)opt_struct;
     opt_flag = 0;
   //  printf("nm _flag %s\n", flag_str);
     if (!ft_strcmp(flag_str, "arch"))
-      return (update_arch_flags(&options->arch_flags, argv[++(*i)], argv[0]));
+      return (update_arch_flags(&options->arch_flags, argv[++(*i)], argv[0], OPT_NM_ARCH));
     if (!ft_strcmp(flag_str, "t"))
       return (update_format(&options->format, argv[++(*i)], argv[0]));
     while (*flag_str)
     {
-      if ((flag_i = ft_strichr(VALID_FLAGS, *flag_str)) == -1)
+      if ((flag_i = ft_strichr(VALID_NM_FLAGS, *flag_str)) == -1)
         return (ft_return_error(OPT_ERROR, "error: %s: invalid argument -%c\n", argv[0], *flag_str));
       opt_flag |= (1 << flag_i);
       flag_str++;
     }
-    if ((opt_flag & OPT_S))
+    if ((opt_flag & OPT_NM_S))
     {
       if (options->segname || options->sectname)
         return (ft_return_error(OPT_ERROR, "error: %s: more than one -s option specified\n", argv[0], *flag_str));
@@ -115,13 +115,13 @@ uint32_t  check_nm_flag(char **argv, uint32_t *i, void *opt_struct)
         ++(*i);
       }
     }
-    if (((options->flags | opt_flag) & OPT_MAJ_U) && ((options->flags | opt_flag ) & OPT_U))
+    if (((options->flags | opt_flag) & OPT_NM_MAJ_U) && ((options->flags | opt_flag ) & OPT_NM_U))
       return (ft_return_error(OPT_ERROR, "error: %s: can't specifiy both -U and -u\n", argv[0]));
-    if (opt_flag & OPT_MAJ_A)
-      opt_flag |= OPT_O;
+    if (opt_flag & OPT_NM_MAJ_A)
+      opt_flag |= OPT_NM_O;
     return (opt_flag);
 }
-
+/*
 char  **parse_arguments(char **argv, void *opt_struct,
         uint32_t (*check_valid_flag)(char **, uint32_t *, void *), uint32_t *flags)
 {
@@ -148,18 +148,18 @@ char  **parse_arguments(char **argv, void *opt_struct,
     return (NULL);
   return (files);
 }
-
+*/
 void  create_section_start(t_pinfo *pinfo)
 {
     t_symtab  sect_start;
     t_symtab  *new_tab;
     // uint32_
-    t_nm_options  *opt;
+    t_option  *opt;
     uint8_t   n_sect;
     // uint64_t  n_value;
     uint32_t  i;
 
-    opt = (t_nm_options *)pinfo->options;
+    opt = (t_option *)pinfo->options;
     i = 0;
     n_sect = 0;
     while (i < pinfo->secid)
@@ -195,11 +195,11 @@ void print_nm(t_pinfo *pinfo, int display)
 {
   if (!(pinfo->symtab))
     ft_fdprintf(2, "warning: %s: no name list\n", pinfo->file_name);
-  else if (display == DISPLAY_INFO_ON && !(((t_nm_options *)pinfo->options)->flags & OPT_O))
+  else if (display == DISPLAY_INFO_ON && !(((t_option *)pinfo->options)->flags & OPT_NM_O))
     printf("\n%s:\n", pinfo->file_name);
 
 //  printf("sort avant\n");
-  if ((((t_nm_options *)pinfo->options)->flags & OPT_L) && (((t_nm_options *)pinfo->options)->flags & OPT_S) && !pinfo->section_start)
+  if ((((t_option *)pinfo->options)->flags & OPT_NM_L) && (((t_option *)pinfo->options)->flags & OPT_NM_S) && !pinfo->section_start)
   {
     create_section_start(pinfo);
     // t_symtab *new_tab;
@@ -219,7 +219,7 @@ void print_nm(t_pinfo *pinfo, int display)
     // }
   }
   // printf("azdazdazd\n");
-  if (!(((t_nm_options *)pinfo->options)->flags & OPT_P))
+  if (!(((t_option *)pinfo->options)->flags & OPT_NM_P))
     sort_symtab(pinfo);
   // printf("sort apresm\n");
   assign_symbol(pinfo);
@@ -233,13 +233,14 @@ int main(int argc, char **argv)
   char      **files;
   t_pinfo   pinfo;
   // uint32_t  options;
-  t_nm_options  opt;
+  t_option  opt;
 
-  ft_bzero(&opt, sizeof(t_nm_options));
+  ft_bzero(&opt, sizeof(t_option));
   i = 0;
+  opt.flags |= NM_DEFAULT_INPUT;
   if (!(files = parse_arguments(argv, &opt, &check_nm_flag, &opt.flags)))
     return (ft_usage_error(1, NM_USAGE, argv[0]));
-  if ((opt.flags & OPT_ARCH) && !check_arch_flags(&opt))
+  if ((opt.flags & OPT_NM_ARCH) && !check_arch_flags(&opt))
     return (ft_usage_error(1, NM_USAGE, argv[0]));
 
 
@@ -251,7 +252,7 @@ int main(int argc, char **argv)
       pinfo = get_parse_info(mfile, BIN_NM);
       pinfo.file_name = files[i];
       pinfo.fsize = file_size;
-      pinfo.options = (void *)&opt;
+      pinfo.options = &opt;
       pinfo.print = &print_nm;
       // printf("%d\n", pinfo.file_type);
       if (pinfo.arch == 32 || pinfo.arch == 64)

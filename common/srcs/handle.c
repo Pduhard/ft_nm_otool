@@ -1,5 +1,106 @@
 #include "common.h"
 
+
+int       check_arch_flags(t_option *opt)
+{
+  int all;
+  int i;
+  const NXArchInfo  *archinfo;
+
+  all = 0;
+  i = 0;
+  while (opt->arch_flags[i])
+  {
+    if (!ft_strcmp(opt->arch_flags[i], "all"))
+      all = 1;
+    else if (!(archinfo = NXGetArchInfoFromName(opt->arch_flags[i])))
+      return (0);
+    i++;
+  }
+  if (all)
+  {
+    free(opt->arch_flags);
+    if (!(opt->arch_flags = ft_memalloc(sizeof(char *) * 2)))
+      return (0);
+    opt->arch_flags[0] = ft_strdup("all");
+  }
+  return (1);
+}
+uint32_t           update_str_tab(char ***tab_addr, char *new, char *prog_name)
+{
+  uint32_t  i;
+  char      **tab;
+  char      **new_tab;
+
+  tab = *tab_addr;
+  i = 0;
+  while (tab && tab[i])
+    i++;
+  if (!(new_tab = ft_memalloc(sizeof(char *) * (i + 2))))
+    return (ft_memalloc_error(0, sizeof(char *) * (i + 2), prog_name));
+  ft_memcpy(new_tab, tab, sizeof(char *) * i);
+  if (!(new_tab[i] = ft_strdup(new)))
+  {
+    free(new_tab);
+    return (ft_memalloc_error(0, ft_strlen(new) + 1, prog_name));
+  }
+  if (tab)
+    free(tab);
+  *tab_addr = new_tab;
+  return (1);
+}
+
+uint32_t       update_arch_flags(char ***arch_flags_addr, char *new_flag, char *prog_name, uint32_t ret)
+{
+    if (!new_flag)
+      return (ft_return_error(OPT_ERROR, "error: %s: missing argument(s) to -arch option\n", prog_name));
+    if (update_str_tab(arch_flags_addr, new_flag, prog_name))
+      return (ret);
+    return (OPT_ERROR);
+}
+
+uint32_t       update_format(e_format *format, char *new_format, char *prog_name)
+{
+    if (!new_format)
+      return (ft_return_error(OPT_ERROR, "error: %s: missing argument to -t option\n", prog_name));
+    if (!ft_strcmp(new_format, "d"))
+      *format = F_DEC;
+    else if (!ft_strcmp(new_format, "o"))
+      *format = F_OCT;
+    else if (!ft_strcmp(new_format, "x"))
+      *format = F_HEX;
+    else
+      return (ft_return_error(OPT_ERROR, "error: %s: invalid argument to option: -t %s\n", prog_name, new_format));
+    return (OPT_NM_T);
+}
+
+char  **parse_arguments(char **argv, t_option *opt_struct,
+        uint32_t (*check_valid_flag)(char **, uint32_t *, t_option *), uint32_t *flags)
+{
+  uint32_t  i;
+  uint32_t  opt_flag;
+  char      **files;
+
+  files = NULL;
+  i = 1;
+  while (argv[i])
+  {
+    if (argv[i][0] == '-' && !(*flags & OPT_END))
+    {
+      if ((opt_flag = check_valid_flag(argv, &i, opt_struct)) == OPT_ERROR)
+        return (NULL);
+      *flags |= opt_flag;
+    }
+    else if (!update_str_tab(&files, argv[i], argv[0]))
+      return (NULL);
+    if (argv[i])
+      i++;
+  }
+  if ((*flags & NM_DEFAULT_INPUT) && files == NULL && !update_str_tab(&files, "a.out", argv[0]))
+    return (NULL);
+  return (files);
+}
+
 void *mapp_file(char *file_name, char *bin_name, off_t *file_size, e_bin bin)
 {
   int         fd;
