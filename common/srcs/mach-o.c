@@ -48,16 +48,20 @@ int       check_archs_in_file(void *mfile, t_pinfo *pinfo)
     uint32_t  i;
     int       check;
     int       ar_check;
+    uint32_t  arch_f;
 
+    arch_f = (pinfo->options->flags & (pinfo->bin == BIN_NM ? OPT_NM_ARCH : OPT_OTOOL_ARCH));
     // printf("???????\n");/
     check = 0;
     i = 0;
     // options = pinfo->options;
-    if (!(pinfo->options->flags & OPT_NM_ARCH) || !ft_strcmp(pinfo->options->arch_flags[0], "all"))
+    if (!(arch_f) || !ft_strcmp(pinfo->options->arch_flags[0], "all"))
       return (1);
+    // printf("¿¿¿¿\n");`
+    ar_check = 0;
     while (pinfo->options->arch_flags[i])
     {
-      if (!(ar_check = check_arch_in_file(pinfo->get_uint32_t(*((uint32_t *)(mfile + sizeof(uint32_t)))), pinfo->get_uint32_t(*((uint32_t *)(mfile + sizeof(uint32_t) * 2))), pinfo, pinfo->options->arch_flags[i])))
+      if (!(ar_check = check_arch_in_file(pinfo->get_uint32_t(*((uint32_t *)(mfile + sizeof(uint32_t)))), pinfo->get_uint32_t(*((uint32_t *)(mfile + sizeof(uint32_t) * 2))), pinfo, pinfo->options->arch_flags[i])) && pinfo->bin == BIN_NM)
         ft_fdprintf(2, "file: %s does not contain architecture: %s\n", pinfo->file_name, pinfo->options->arch_flags[i]);
       check |= ar_check;
       // else if (pinfo->file_type == ARCHIVE_FILE)
@@ -109,9 +113,13 @@ int   check_macho_file(void *mfile, t_pinfo *pinfo)
   uint32_t            final_size;
 
   i = 0;
-
+  // printf("he\n");
   if (!pinfo->fat_arch_from && !pinfo->ar_from && !check_archs_in_file(mfile, pinfo))
     return (0);
+  if (pinfo->bin == BIN_OTOOL)
+    return (1);
+    //
+    // return (0);
   if (pinfo->arch == 64)
     sizeofcmds = pinfo->get_uint32_t(((struct mach_header_64 *)mfile)->sizeofcmds);
   else if (pinfo->arch == 32)
@@ -204,7 +212,7 @@ void  handle_macho_file(void **mfile, t_pinfo *pinfo, uint32_t display)
   i = 0;
   // void                *filestart;
 
-  if (pinfo->bin == BIN_NM && !check_macho_file(*mfile, pinfo))
+  if (!check_macho_file(*mfile, pinfo))
     return ;
 
   ncmds = get_number_load_command(*mfile, pinfo);

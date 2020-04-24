@@ -187,7 +187,7 @@ int  check_lc_symtab(struct load_command *load_command, t_pinfo *pinfo, uint32_t
 int  check_lc_segment(struct load_command *load_command, t_pinfo *pinfo, uint32_t load_cmd_id);
 int  check_lc_segment_64(struct load_command *load_command, t_pinfo *pinfo, uint32_t load_cmd_id);
 int  check_macho_file(void *mfile, t_pinfo *pinfo);
-int  check_archive_file(void *mfile, t_pinfo *pinfo);
+int  check_archive_file(void *mfile, t_pinfo *pinfo, uint32_t fatal);
 int check_fat_file(void *mfile, t_pinfo *pinfo);
 
 /*  command handle functions  */

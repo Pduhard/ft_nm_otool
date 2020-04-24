@@ -1,6 +1,6 @@
 #include "ft_otool.h"
 
-void print_memory(t_pinfo *pinfo, uint64_t addr, uint32_t offset, uint64_t size)
+void print_memory(t_pinfo *pinfo, uint64_t addr, uint32_t offset, uint64_t size, char display)
 {
   unsigned char *mem;
   uint32_t      i;
@@ -11,7 +11,7 @@ void print_memory(t_pinfo *pinfo, uint64_t addr, uint32_t offset, uint64_t size)
   mem = (unsigned char *)(pinfo->file_start + offset);
   while ((long long)size > 0 && (off_t)((void *)mem - pinfo->file_start) < pinfo->fsize)
   {
-    printf(pinfo->arch == ARCH_32 ? "%08llx " : "%016llx ", addr);
+    printf(pinfo->arch == ARCH_32 ? "%08llx%c" : "%016llx%c", addr, display);
     i = 0;
 
     while (i < 16 && i < size && (off_t)((void *)mem - pinfo->file_start + i) < pinfo->fsize)
@@ -36,7 +36,7 @@ void print_memory(t_pinfo *pinfo, uint64_t addr, uint32_t offset, uint64_t size)
   }
 }
 
-void print_text_section(t_pinfo *pinfo, t_sectab *sectab)
+void print_section(t_pinfo *pinfo, t_sectab *sectab, char *segname, char *sectname, char display)
 {
   struct section    *sect;
   struct section_64 *sect_64;
@@ -46,11 +46,12 @@ void print_text_section(t_pinfo *pinfo, t_sectab *sectab)
 
   sect = NULL;
   sect_64 = NULL;
+  // printf("ah\n");
   if (pinfo->arch == ARCH_32)
     sect = (struct section *)sectab->secaddr;
   else
     sect_64 = (struct section_64 *)sectab->secaddr;
-    // printf("%p %u\n", sect, *(unsigned int*)sect_64);
+  // printf("%p %u\n", sect, *(unsigned int*)sect_64);
   sect_off = sect ? pinfo->get_uint32_t(sect->offset) : pinfo->get_uint32_t(sect_64->offset);
   sect_size = sect ? pinfo->get_uint32_t(sect->size) : pinfo->get_uint64_t(sect_64->size);
 
@@ -66,48 +67,58 @@ void print_text_section(t_pinfo *pinfo, t_sectab *sectab)
   if ((off_t)sect_off > pinfo->fsize)
   {
     size = 0;
-    printf("section offset for section (__TEXT,__text) is past end of file\n");
+    printf("section offset for section (%s,%s) is past end of file\n", segname, sectname);
   }
   else if (sect_size > (unsigned long long)pinfo->fsize || (off_t)(sect_off + sect_size) > pinfo->fsize)
   {
     size = pinfo->arch == ARCH_32 ? pinfo->fsize - sect_off : 0; // CHELOU ouai
     // size = sect_size;
     // printf("%llx %x\n", size);
-    printf("section (__TEXT,__text) extends past end of file\n");
+    printf("section (%s,%s) extends past end of file\n", segname, sectname);
   }
   else
     size = sect_size;
-  printf("(%s,%s) section\n", SEG_TEXT, SECT_TEXT);
+  printf("(%s,%s) section\n", segname, sectname);
 
 //  printf("%s %s\n", sect->segname, sect->sectname);
-  print_memory(pinfo, sect ? pinfo->get_uint32_t(sect->addr) : pinfo->get_uint64_t(sect_64->addr), sect_off, size);
+  print_memory(pinfo, sect ? pinfo->get_uint32_t(sect->addr) : pinfo->get_uint64_t(sect_64->addr), sect_off, size, display);
   // printf("section text \n");
   (void)pinfo;
   (void)sectab;
 }
 
-int check_otool_seg(t_pinfo *pinfo, struct segment_command *seg, uint32_t sizeofcmds, uint32_t *secid, char *segname, char *sectname)
+int check_otool_seg(t_pinfo *pinfo, struct segment_command *seg, uint32_t sizeofcmds, uint32_t *secid, char *segname, char *sectname, char display)
 {
     struct section *sect;
     uint32_t  i;
+    // uint32_t  new_id;
 
     i = 0;
     // sect = pinfo->file_start + pinfo->get_uint32_t(seg->fileoff);
     sect = (struct section *)((void *)seg + sizeof(struct segment_command));
-    while (i < seg->nsects)
+    // new_id = *secid + pinfo->get_uint32_t(seg->nsects);
+    while (i < pinfo->get_uint32_t(seg->nsects))
     {
+
+      // printf("%.6s %.6s\n", sect->segname, sect->sectname);
       if ((void *)sect + sizeof(struct section) > (void *)pinfo->loadc + sizeofcmds)
       {
-        printf("section structure extend past end of load commands\n");
+        // *secid = new_id;
+        // return (0);
+        printf("section structure command extends past end of load commands\n");
+        return (0);
       }
       if (/* OPTION_T */ !ft_strncmp(sect->segname, segname, ft_strlen(segname))
         && !ft_strncmp(sect->sectname, sectname, ft_strlen(sectname)))
         {
-          print_text_section(pinfo, pinfo->sectab + *secid);
+          // printf("secid %d pinfoid %u\n", *secid, pinfo->secid);
+          print_section(pinfo, pinfo->sectab + *secid, segname, sectname, display);
           return (1);
           // check = 1;
         }
+
       sect++;
+      // = (void *)sect + sizeof(struct section);
       i++;
       (*secid)++;
     }
@@ -116,24 +127,29 @@ int check_otool_seg(t_pinfo *pinfo, struct segment_command *seg, uint32_t sizeof
 
 }
 
-int check_otool_seg_64(t_pinfo *pinfo, struct segment_command_64 *seg_64, uint32_t sizeofcmds, uint32_t *secid, char *segname, char *sectname)
+int check_otool_seg_64(t_pinfo *pinfo, struct segment_command_64 *seg_64, uint32_t sizeofcmds, uint32_t *secid, char *segname, char *sectname, char display)
 {
     struct section_64 *sect_64;
     uint32_t  i;
+    uint32_t  new_id;
 
     i = 0;
     // sect = pinfo->file_start + pinfo->get_uint32_t(seg->fileoff);
     sect_64 = (struct section_64 *)((void *)seg_64 + sizeof(struct segment_command_64));
-    while (i < seg_64->nsects)
+    new_id = *secid + seg_64->nsects;
+    while (i < pinfo->get_uint32_t(seg_64->nsects))
     {
       if ((void *)sect_64 + sizeof(struct section_64) > (void *)pinfo->loadc + sizeofcmds)
       {
-        printf("section structure extend past end of load commands\n");
+        // *secid = new_id;
+        // return (0);
+        printf("section structure command extends past end of load commands\n");
+        return (0);
       }
       if (/* OPTION_T */ !ft_strncmp(sect_64->segname, segname, ft_strlen(segname))
         && !ft_strncmp(sect_64->sectname, sectname, ft_strlen(sectname)))
         {
-          print_text_section(pinfo, pinfo->sectab + *secid);
+          print_section(pinfo, pinfo->sectab + *secid, segname, sectname, display);
           return (1);
           // check = 1;
         }
@@ -145,7 +161,7 @@ int check_otool_seg_64(t_pinfo *pinfo, struct segment_command_64 *seg_64, uint32
     return (0);
 }
 
-int print_otool_section(t_pinfo *pinfo, char *segname, char *sectname)
+int print_otool_section(t_pinfo *pinfo, char *segname, char *sectname, char display)
 {
   uint32_t  ncmds;
   uint32_t  i;
@@ -169,10 +185,11 @@ int print_otool_section(t_pinfo *pinfo, char *segname, char *sectname)
     load_c = pinfo->loadc;
   if ((off_t)((void *)load_c + sizeofcmds) > pinfo->fsize)
     sizeofcmds = pinfo->fsize - (off_t)((void *)load_c - pinfo->file_start);
+  // printf("%d\n", sizeofcmds);
   // sizeofcmds =
   i = 0;
   tt_size = 0;
-  while (i < ncmds)
+  while (i < ncmds && tt_size < sizeofcmds)
   {
 
 
@@ -180,14 +197,6 @@ int print_otool_section(t_pinfo *pinfo, char *segname, char *sectname)
     j = 0;
     seg = NULL;
     seg_64 = NULL;
-    if (pinfo->get_uint32_t(load_c->cmd) == LC_SEGMENT)
-      seg = (struct segment_command *)load_c;
-    else if (pinfo->get_uint32_t(load_c->cmd) == LC_SEGMENT_64)
-      seg_64 = (struct segment_command_64 *)load_c;
-    if (seg && check_otool_seg(pinfo, seg, sizeofcmds, &secid, segname, sectname))
-      return (1);
-    else if (seg_64 && check_otool_seg_64(pinfo, seg_64, sizeofcmds, &secid, segname, sectname))
-      return (1);
     if (pinfo->get_uint32_t(load_c->cmdsize) % sizeof(uint32_t))
         printf("load command %u size not a multiple of sizeof(int32_t)\n", i);
      // printf("%u += %u\n", tt_size, pinfo->get_uint32_t(load_c->cmdsize));
@@ -197,12 +206,24 @@ int print_otool_section(t_pinfo *pinfo, char *segname, char *sectname)
       return (0);
     }
     tt_size += pinfo->get_uint32_t(load_c->cmdsize);// + pinfo->get_uint32_t(load_c->cmdsize) % sizeof(uint32_t);
-    load_c = (void *)load_c + pinfo->get_uint32_t(load_c->cmdsize);//m + pinfo->get_uint32_t(load_c->cmdsize) % sizeof(uint32_t);
     if (tt_size > sizeofcmds)
     {
-     printf("load command %u extends past end of load commands\n", i);
-     return (0);
+      printf("load command %u extends past end of load commands\n", i);
+      // return (0);
     }
+    // if ()
+    if (pinfo->get_uint32_t(load_c->cmd) == LC_SEGMENT)
+      seg = (struct segment_command *)load_c;
+    else if (pinfo->get_uint32_t(load_c->cmd) == LC_SEGMENT_64)
+      seg_64 = (struct segment_command_64 *)load_c;
+    if (seg && check_otool_seg(pinfo, seg, sizeofcmds, &secid, segname, sectname, display))
+      return (1);
+    else if (seg_64 && check_otool_seg_64(pinfo, seg_64, sizeofcmds, &secid, segname, sectname, display))
+      return (1);
+    // printf("a\n");
+
+    load_c = (void *)load_c + pinfo->get_uint32_t(load_c->cmdsize);//m + pinfo->get_uint32_t(load_c->cmdsize) % sizeof(uint32_t);
+
       // printf'
       // printf("")
     i++;
@@ -226,8 +247,11 @@ void print_otool(t_pinfo *pinfo, int display)
   else
     printf("%s(%s):\n", pinfo->file_name, pinfo->ar_from);
     // printf("bin\n");
-  if ((pinfo->options->flags & OPT_OTOOL_T) && !print_otool_section(pinfo, SEG_TEXT, SECT_TEXT))
+  if ((pinfo->options->flags & OPT_OTOOL_T) && !print_otool_section(pinfo, SEG_TEXT, SECT_TEXT, ' '))
       printf("(%s,%s) section\n", SEG_TEXT, SECT_TEXT);
+  if ((pinfo->options->flags & OPT_OTOOL_D))
+      print_otool_section(pinfo, SEG_DATA, SECT_DATA, '\t');
+      // printf("(%s,%s) section\n", SEG_TEXT, SECT_TEXT);
 // (__TEXT,__text) section
 
       // printf("HA\n");
@@ -324,7 +348,7 @@ int main(int argc, char **argv)
     ft_throw_error("error: %s: at least one file must be specified\n", argv[0]);
     return (ft_usage_error(1, OTOOL_USAGE, argv[0]));
   }
-  if (!opt.flags)
+  if (!(opt.flags & ~OPT_OTOOL_ARCH))
   {
       ft_throw_error("error: %s: one of -fahltd[s segname sectname] must be specified\n", argv[0]);
       return (ft_usage_error(1, OTOOL_USAGE, argv[0]));

@@ -2,7 +2,7 @@
 
 // extern off_t fsize;
 
-int   check_archive_file(void *mfile, t_pinfo *pinfo)
+int   check_archive_file(void *mfile, t_pinfo *pinfo, uint32_t fatal)
 {
   struct ar_hdr *ar_hd;
   cpu_type_t    cputype;
@@ -12,15 +12,18 @@ int   check_archive_file(void *mfile, t_pinfo *pinfo)
   uint32_t      check;
   uint32_t      final_check;
   uint32_t      i;
+  uint32_t      arch_flag;
+
+  arch_flag = pinfo->bin == BIN_NM ? (pinfo->options->flags & OPT_NM_ARCH) : (pinfo->options->flags & OPT_OTOOL_ARCH);
   // t_nm_options  *options;
 
   // options = (t_nm_options *)pinfo->options;
 
   final_check = 0;
   i = 0;
-  while ((!i && !(pinfo->options->flags & OPT_NM_ARCH)) || ((pinfo->options->flags & OPT_NM_ARCH) && pinfo->options->arch_flags[i]))
+  while ((!i && !arch_flag) || (arch_flag && pinfo->options->arch_flags[i]))
   {
-    check = (pinfo->options->flags & OPT_NM_ARCH) && !pinfo->fat_arch_from ? 0 : 1;
+    check = (arch_flag) && !pinfo->fat_arch_from ? 0 : 1;
     if (!check && !ft_strcmp(pinfo->options->arch_flags[0], "all"))
       check = 1;
     cputype = 0;
@@ -29,7 +32,7 @@ int   check_archive_file(void *mfile, t_pinfo *pinfo)
       // return (0);
     if ((off_t)SARMAG == pinfo->fsize)
       return (1);
-    if ((off_t)(SARMAG + sizeof(struct ar_hdr)) > pinfo->fsize)
+    if ((off_t)(SARMAG + sizeof(struct ar_hdr)) > pinfo->fsize && fatal)
     {
     //  printf("ér\n");m
       ft_fdprintf(2, "truncated or malformed (archive header of first member extends past the end of the file)\n");
@@ -37,12 +40,13 @@ int   check_archive_file(void *mfile, t_pinfo *pinfo)
     }
 
     ar_hd = (struct ar_hdr *)(mfile + SARMAG);
-    if ((off_t)((void *)ar_hd - mfile + ft_atoll(ar_hd->ar_size)) > pinfo->fsize)
+    if ((off_t)((void *)ar_hd - mfile + ft_atoll(ar_hd->ar_size)) > pinfo->fsize  && fatal)
     {
       ft_fdprintf(2, "size too large (archive member extends past the end of the file)\n");
       return (0);
     }
     uint32_t extended = ft_strncmp(ar_hd->ar_name, AR_EFMT1, ft_strlen(AR_EFMT1)) ? 0 : 1;
+    // printf("before while\n");
     while ((off_t)((void *)ar_hd - mfile) < pinfo->fsize)
     {
         // if (!(extended && (!ft_strcmp(name, SYMDEF) || !ft_strcmp(name, SYMDEF_SORTED))))
@@ -51,7 +55,7 @@ int   check_archive_file(void *mfile, t_pinfo *pinfo)
 
       //  printf("%u %u sizeof %zu\n", (unsigned int)((void *)ar_hd - mfile + ft_atoll(ar_hd->ar_size)), (unsigned int)pinfo->fsize, sizeof(struct ar_hdr));
         hd = (void *)ar_hd + sizeof(struct ar_hdr) + (extended ? ft_atoll(ar_hd->ar_name + ft_strlen(AR_EFMT1)) : 0);
-        if ((off_t)((void *)hd - mfile) > pinfo->fsize)
+        if ((off_t)((void *)hd - mfile) > pinfo->fsize  && fatal)
         {
           ft_fdprintf(2, "size too large (archive member extends past the end of the file)\n");
           return (0);
@@ -60,14 +64,16 @@ int   check_archive_file(void *mfile, t_pinfo *pinfo)
         fpinfo.print = pinfo->print;
         fpinfo.file_name = pinfo->file_name;
         fpinfo.options = pinfo->options;
-    //   printf("magic %x == %x ?\n", *(uint32_t *)ar_hd, FAT_MAGIC);
-        if (*(uint32_t *)hd == FAT_MAGIC || *(uint32_t *)hd == FAT_CIGAM)
+
+      // printf("magic %x == %x ?\n", *(uint32_t *)hd, FAT_MAGIC);
+        if ((*(uint32_t *)hd == FAT_MAGIC || *(uint32_t *)hd == FAT_CIGAM) && fatal)
         {
           ft_fdprintf(2, "is a fat file (not allowed in an archive)\n");
           return (0);
         }
         else if (*(uint32_t *)hd == MH_MAGIC || *(uint32_t *)hd == MH_CIGAM)
         {
+          // printf("32\n");
           if (cputype == 0)
           {
             cputype = fpinfo.get_uint32_t(((struct mach_header *)hd)->cputype);
@@ -75,11 +81,12 @@ int   check_archive_file(void *mfile, t_pinfo *pinfo)
           }
           if (!check)
             check |= check_arch_in_file(cputype, cpusubtype, &fpinfo, pinfo->options->arch_flags[i]);
-          else if ((uint32_t)cputype != fpinfo.get_uint32_t(((struct mach_header *)hd)->cputype))
+          else if ((uint32_t)cputype != fpinfo.get_uint32_t(((struct mach_header *)hd)->cputype) && fatal)
             ft_fdprintf(2, "cputype (%d) does not match previous archive members cputype (%d) (all members must match)\n", fpinfo.get_uint32_t(((struct mach_header *)hd)->cputype), cputype);
         }
         else if (*(uint32_t *)hd == MH_MAGIC_64 || *(uint32_t *)hd == MH_CIGAM_64)
         {
+          // printf("%x %x e : %x \n", fpinfo.get_uint32_t(((struct mach_header_64 *)hd)->cputype), fpinfo.get_uint32_t(((struct mach_header_64 *)hd)->cpusubtype), CPU_TYPE_X86_64);
           if (cputype == 0)
           {
             cputype = fpinfo.get_uint32_t(((struct mach_header_64 *)hd)->cputype);
@@ -87,15 +94,16 @@ int   check_archive_file(void *mfile, t_pinfo *pinfo)
           }
           if (!check)
             check |= check_arch_in_file(cputype, cpusubtype, &fpinfo, pinfo->options->arch_flags[i]);
-          else if ((uint32_t)cputype != fpinfo.get_uint32_t(((struct mach_header_64 *)hd)->cputype))
+          else if ((uint32_t)cputype != fpinfo.get_uint32_t(((struct mach_header_64 *)hd)->cputype) && fatal)
             ft_fdprintf(2, "cputype (%d) does not match previous archive members cputype (%d) (all members must match)\n", fpinfo.get_uint32_t(((struct mach_header_64 *)hd)->cputype), cputype);
         }
         ar_hd = (struct ar_hdr *)((void *)ar_hd + ft_atoll(ar_hd->ar_size) + sizeof(struct ar_hdr));
-        if ((off_t)((void *)ar_hd - mfile + ft_atoll(ar_hd->ar_size)) > pinfo->fsize)
+        if ((off_t)((void *)ar_hd - mfile + ft_atoll(ar_hd->ar_size)) > pinfo->fsize && fatal)
         {
           ft_fdprintf(2, "size too large (archive member extends past the end of the file)\n");
           return (0);
         }
+        // printf("check %d\n", check);
     }
     final_check |= check;
     if (!check)
@@ -105,6 +113,7 @@ int   check_archive_file(void *mfile, t_pinfo *pinfo)
   // if (!check)
   //   ft_fdprintf(2, "does not contain architecture: i386")
   // printf("????????\n");
+
   return (final_check);
 }
 
@@ -140,7 +149,7 @@ void  handle_archive_file(void **mfile, t_pinfo *pinfo)
 
   first = 1;
 
-  if (pinfo->bin == BIN_NM && !check_archive_file(*mfile, pinfo))
+  if ((pinfo->bin == BIN_NM || (pinfo->options->flags & OPT_OTOOL_ARCH)) && !check_archive_file(*mfile, pinfo, (pinfo->bin == BIN_NM)))
    return ;
   else if (pinfo->bin == BIN_OTOOL)
    printf("Archive : %s\n", pinfo->file_name);

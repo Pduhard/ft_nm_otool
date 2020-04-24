@@ -267,7 +267,7 @@ int check_fat_file(void *mfile, t_pinfo *pinfo)
       return (0);
 
     }
-    else if (fpinfo.file_type == ARCHIVE_FILE && (pinfo->ar_from || !check_archive_file(hd, &fpinfo)))
+    else if (fpinfo.file_type == ARCHIVE_FILE && (pinfo->ar_from || !check_archive_file(hd, &fpinfo, 1)))
       return (0);
     // else
     // {
@@ -287,10 +287,10 @@ void  handle_fat_file(void **mfile, t_pinfo *pinfo, uint32_t display)
   char              **arch_flags;
   const NXArchInfo  *fat_arch_info;
   uint32_t          i;
-  uint32_t          flags;
+  uint32_t          arch_flag_check;
   t_pinfo           fpinfo;
 
-  flags = pinfo->bin == BIN_NM ? pinfo->options->flags : 0;
+  arch_flag_check = pinfo->bin == BIN_NM ? (pinfo->options->flags & OPT_NM_ARCH) : (pinfo->options->flags & OPT_OTOOL_ARCH);
   //uint32_t  nfat;
 //  struct fat_arch   *fhd;
   // t_pinfo   fpinfo;
@@ -317,9 +317,9 @@ void  handle_fat_file(void **mfile, t_pinfo *pinfo, uint32_t display)
     return ;
   }
 // printf("%x\n", fat_hd->magic);
-  if (!(flags & OPT_NM_ARCH) && (fat_arch = get_best_fat_arch(pinfo, fat_hd, (struct fat_arch *)(*mfile + sizeof(struct fat_header)), &fat_archs_rev)) && fat_arch->offset < pinfo->fsize)
+  if (!(arch_flag_check) && (fat_arch = get_best_fat_arch(pinfo, fat_hd, (struct fat_arch *)(*mfile + sizeof(struct fat_header)), &fat_archs_rev)) && fat_arch->offset < pinfo->fsize)
   {
-    // printf("zzzzzzzzzz\n");
+   // printf("zzzzzzzzzz\n");
     fat_arch_info = NXGetArchInfoFromCpuType(fat_arch->cputype, fat_arch->cpusubtype);
     if (fat_arch->offset + fat_arch->size > pinfo->fsize)
       ft_fdprintf(2, "fat file: %s offset to architecture %s extends past end of file\n", pinfo->file_name, fat_arch_info->name);
@@ -355,7 +355,7 @@ void  handle_fat_file(void **mfile, t_pinfo *pinfo, uint32_t display)
       //   ft_fdprintf(2, "%s malformed fat file (fat header architecture: %u's cputype does not match object file's mach header)\n", pinfo->file_name, i);
     }
   }
-  else if (!(flags & OPT_NM_ARCH) || !ft_strcmp(pinfo->options->arch_flags[0], "all"))
+  else if (!(arch_flag_check) || !ft_strcmp(pinfo->options->arch_flags[0], "all"))
   {
     fat_arch = (struct fat_arch *)(*mfile + sizeof(struct fat_header));
   //  fat_arch_info = NXGetArchInfoFromCpuType(pinfo->get_uint32_t(fat_arch->cputype), pinfo->get_uint32_t(fat_arch->cpusubtype));
